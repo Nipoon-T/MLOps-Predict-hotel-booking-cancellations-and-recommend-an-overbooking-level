@@ -1,6 +1,8 @@
-pandas
-numpy
-scikit-learn
-pandera
-matplotlib
-seaborn
+pandas==3.0.6
+numpy==2.5.3
+scikit-learn==1.9.1
+pandera==0.33.1
+matplotlib==3.11.2
+seaborn==0.13.2
+PyYAML==6.0.3
+pytest==9.1.1

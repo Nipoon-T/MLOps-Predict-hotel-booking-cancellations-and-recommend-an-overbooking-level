@@ -1,0 +1,90 @@
+# ============================================================
+# HOTEL BOOKING MODEL COLUMNS
+# ============================================================
+
+# ------------------------------------------------------------
+# Target
+# ------------------------------------------------------------
+
+target:
+  name: is_canceled
+  type: binary
+  description: "Whether the booking was canceled"
+
+
+# ------------------------------------------------------------
+# Leakage Columns
+# ------------------------------------------------------------
+
+leakage_columns:
+
+  - name: reservation_status
+    reason: "Known after the reservation outcome and directly reflects cancellation status."
+
+  - name: reservation_status_date
+    reason: "Associated with the final reservation status and can leak post-outcome information."
+
+  - name: assigned_room_type
+    reason: "Room assignment can be determined after booking and may contain post-booking information."
+
+  - name: required_car_parking_spaces
+    reason: "Marked by reviewer as leakage for the modeling feature set."
+
+  - name: booking_changes
+    reason: "Booking changes may occur after the initial booking and can introduce future information."
+
+  - name: total_of_special_requests
+    reason: "Marked by reviewer as leakage for the modeling feature set."
+
+
+# ------------------------------------------------------------
+# Time Split
+# ------------------------------------------------------------
+
+time_split:
+  column: arrival_date
+  method: chronological
+
+  excluded_model_feature:
+    - name: arrival_date_year
+      reason: "arrival_date_year should not be used as a model feature when using a time-based split."
+
+
+# ------------------------------------------------------------
+# Team Decision Columns
+# ------------------------------------------------------------
+
+team_decision_columns:
+
+  - name: days_in_waiting_list
+    status: "team_decision"
+    reason: "Reviewer indicates that inclusion requires a team decision."
+
+  - name: adr
+    status: "team_decision"
+    reason: "Reviewer indicates that inclusion requires a team decision."
+
+
+# ------------------------------------------------------------
+# Decision-Layer Columns
+# ------------------------------------------------------------
+
+decision_layer_columns:
+
+  - hotel
+  - adr
+  - arrival_date
+  - stays_in_weekend_nights
+  - stays_in_week_nights
+
+
+# ------------------------------------------------------------
+# Notes
+# ------------------------------------------------------------
+
+notes:
+
+  - "is_canceled is the prediction target."
+  - "Leakage columns must not be used as model features."
+  - "arrival_date_year is excluded as a model feature when using chronological time split."
+  - "adr and days_in_waiting_list remain subject to team decision."
