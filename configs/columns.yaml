@@ -88,3 +88,4 @@ notes:
   - "Leakage columns must not be used as model features."
   - "arrival_date_year is excluded as a model feature when using chronological time split."
   - "adr and days_in_waiting_list remain subject to team decision."
+  - "deposit_type = Non Refund has an observed cancellation rate of 99.4% and should be treated as an anomalous pattern to document."

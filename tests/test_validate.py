@@ -9,6 +9,8 @@ from src.validate import (
     validate_months,
     validate_years,
     validate_guest_count,
+    validate_missingness,
+    get_missingness_report,
 )
 
 from src.split_data import temporal_split, sha256_file
@@ -71,6 +73,29 @@ def test_year_values_are_valid():
     errors = validate_years(df)
 
     assert errors == []
+
+
+# ============================================================
+# MISSING VALUE TESTS
+# ============================================================
+
+def test_critical_missing_value_is_detected():
+    df = load_raw_data()
+
+    df.loc[0, "hotel"] = None
+
+    errors = validate_missingness(df)
+
+    assert any("hotel" in error for error in errors)
+
+
+def test_optional_missing_values_are_reported_but_not_errors():
+    df = load_raw_data()
+
+    report = get_missingness_report(df)
+
+    assert "company" in report
+    assert report["company"] > 0
 
 
 # ============================================================

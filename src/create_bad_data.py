@@ -6,9 +6,20 @@ import pandas as pd
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
+# กำหนด paths จาก project root
+RAW_DATA_PATH = os.path.join(
+    PROJECT_ROOT,
+    "data",
+    "raw",
+    "hotel_bookings.csv"
+)
 
-RAW_DATA_PATH = "data/raw/hotel_bookings.csv"
-BAD_DATA_PATH = "data/bad/hotel_bookings_bad.csv"
+BAD_DATA_PATH = os.path.join(
+    PROJECT_ROOT,
+    "data",
+    "bad",
+    "hotel_bookings_bad.csv"
+)
 
 
 def create_bad_data():
@@ -68,7 +79,7 @@ def create_bad_data():
         index=False
     )
 
-    print(f"\nBad data saved to:")
+    print("\nBad data saved to:")
     print(BAD_DATA_PATH)
 
     print("\nInjected errors:")
