@@ -6,3 +6,5 @@ seaborn==0.13.2
 PyYAML==6.0.3
 pytest==9.1.1
 tabulate==0.10.0
+mlflow==3.16.1
+lightgbm==4.x.x
