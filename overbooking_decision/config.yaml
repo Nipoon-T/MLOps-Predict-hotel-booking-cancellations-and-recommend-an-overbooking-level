@@ -1,0 +1,28 @@
+# สมมติฐานต้นทุนสำหรับชั้นตัดสินใจ Overbooking
+# ปรับค่าที่นี่ที่เดียว ห้ามแก้ logic ในไฟล์ .py
+
+# capacity ต่อโรงแรม (จำนวนห้องที่รับจองได้สูงสุดต่อคืน)
+# แนะนำ: ประมาณจาก percentile สูง (เช่น p95) ของจำนวนการจองพร้อมกันต่อคืนในข้อมูลจริง
+capacity:
+  "Resort Hotel": 91
+  "City Hotel": 190
+
+# ค่าเริ่มต้น (ใช้ตอนยังไม่รู้ capacity ของโรงแรม)
+default_capacity: 300
+
+# ตัวคูณค่าชดเชย/ย้ายลูกค้า: cost_overbook = k * adr
+# ทดสอบหลายค่าเพื่อทำ sensitivity analysis
+k_values: [1.5, 2.0, 3.0]
+
+# ค่า k หลักที่ใช้เป็นค่า default เวลาไม่ได้ระบุ
+default_k: 2.0
+
+# นโยบาย "คงที่" (fixed policy) ใช้ overbook กี่ % ของ capacity
+fixed_overbook_pct: 0.05
+
+# Monte Carlo
+monte_carlo:
+  n_sims: 2000
+  seed: 42
+  # ค้นหา o (จำนวนห้อง overbook) ในช่วง 0..o_max_pct*capacity
+  o_max_pct: 0.30
