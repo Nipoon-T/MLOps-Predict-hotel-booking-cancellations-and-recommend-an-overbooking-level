@@ -12,8 +12,8 @@ from fastapi.responses import JSONResponse
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.append(str(ROOT))
 
-from src.modeling.features import build_features  
-from src.serving.schemas import Booking  
+from src.modeling.features import build_features
+from src.serving.schemas import Booking
 
 # ---------- ตั้งค่าโมเดล ----------
 MODEL_NAME = "hotel-cancellation-classifier"
@@ -30,7 +30,8 @@ def load_model():
         loaded = mlflow.sklearn.load_model(MODEL_URI)
         print(f"[OK] โหลดโมเดลสำเร็จ: {MODEL_URI}")
         return loaded
-    except Exception as error:
+        # ตั้งใจจับทุก error: ถ้าโหลดโมเดลไม่ได้ API ยังเปิดได้ แล้ว /health จะบอกว่า model_not_loaded
+    except Exception as error:  # noqa: BLE001
         print(f"[ERROR] โหลดโมเดลไม่ได้: {error}")
         return None
 
@@ -100,5 +101,53 @@ def predict(booking: Booking):
     return {
         "p_cancel": round(p_cancel, 4),
         "will_cancel": p_cancel >= THRESHOLD,
+        "model_uri": MODEL_URI,
+    }
+
+
+MAX_BATCH_SIZE = 1000  # กันไม่ให้ส่งมาทีเดียวเยอะเกินจน API ค้าง
+
+
+@app.post("/predict-batch")
+def predict_batch(bookings: list[Booking]):
+    """รับหลายรายการจอง แล้วคืนความน่าจะเป็นยกเลิกของแต่ละรายการ"""
+    if model is None:
+        raise HTTPException(status_code=503, detail="ยังโหลดโมเดลไม่ได้")
+
+    # เช็กจำนวนรายการ
+    if len(bookings) == 0:
+        raise HTTPException(status_code=422, detail="ต้องส่งมาอย่างน้อย 1 รายการ")
+    if len(bookings) > MAX_BATCH_SIZE:
+        raise HTTPException(
+            status_code=422,
+            detail=f"ส่งได้ไม่เกิน {MAX_BATCH_SIZE} รายการต่อครั้ง (ส่งมา {len(bookings)} รายการ)",
+        )
+
+    # แปลงทุกรายการเป็น DataFrame เดียว (1 รายการ = 1 แถว)
+    rows = []
+    for booking in bookings:
+        one_row_df = booking_to_dataframe(booking)
+        rows.append(one_row_df)
+    df = pd.concat(rows, ignore_index=True)
+
+    # ทำนายทั้งก้อนในครั้งเดียว
+    X = build_features(df)
+    probabilities = model.predict_proba(X)[:, 1]
+
+    # จัดผลลัพธ์ทีละรายการ
+    results = []
+    for index in range(len(probabilities)):
+        p_cancel = float(probabilities[index])
+        results.append(
+            {
+                "index": index,
+                "p_cancel": round(p_cancel, 4),
+                "will_cancel": p_cancel >= THRESHOLD,
+            }
+        )
+
+    return {
+        "count": len(results),
+        "results": results,
         "model_uri": MODEL_URI,
     }

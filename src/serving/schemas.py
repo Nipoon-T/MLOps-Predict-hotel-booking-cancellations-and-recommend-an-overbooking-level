@@ -1,10 +1,20 @@
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
 Month = Literal[
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 ]
 
 
@@ -21,12 +31,12 @@ class Booking(BaseModel):
 
     # ----- ผู้เข้าพัก -----
     adults: int = Field(ge=0)
-    children: Optional[int] = Field(default=0, ge=0)
+    children: int | None = Field(default=0, ge=0)
     babies: int = Field(default=0, ge=0)
 
     # ----- รายละเอียดการจอง -----
     meal: str
-    country: Optional[str] = None
+    country: str | None = None
     market_segment: str
     distribution_channel: str
     is_repeated_guest: int = Field(ge=0, le=1)
@@ -35,8 +45,8 @@ class Booking(BaseModel):
     reserved_room_type: str
     booking_changes: int = Field(default=0, ge=0)
     deposit_type: Literal["No Deposit", "Non Refund", "Refundable"]
-    agent: Optional[int] = None
-    company: Optional[int] = None
+    agent: int | None = None
+    company: int | None = None
     days_in_waiting_list: int = Field(default=0, ge=0)
     customer_type: str
     adr: float = Field(ge=0, description="ราคาห้องเฉลี่ยต่อคืน ห้ามติดลบ")
