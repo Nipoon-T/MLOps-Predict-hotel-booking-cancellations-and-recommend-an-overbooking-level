@@ -1,7 +1,15 @@
+"""
+schemas.py — กำหนดหน้าตาข้อมูลที่ API รับเข้า
+
+ถ้าข้อมูลผิด เช่น lead_time ติดลบ, ผู้เข้าพักเป็นศูนย์ทั้งหมด, adr ติดลบ, เดือนไม่ถูกต้อง
+FastAPI จะตอบ 422 ให้อัตโนมัติ โดยไม่ส่งข้อมูลเข้าโมเดลเลย
+"""
+
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+# เดือนที่ยอมรับ (เขียนแบบเดียวกับในชุดข้อมูล)
 Month = Literal[
     "January",
     "February",
@@ -17,10 +25,12 @@ Month = Literal[
     "December",
 ]
 
+HotelName = Literal["City Hotel", "Resort Hotel"]
+
 
 class Booking(BaseModel):
     # ----- ข้อมูลโรงแรมและวันเข้าพัก -----
-    hotel: Literal["City Hotel", "Resort Hotel"]
+    hotel: HotelName
     lead_time: int = Field(ge=0, description="จำนวนวันระหว่างวันจองกับวันเข้าพัก ห้ามติดลบ")
     arrival_date_year: int = Field(ge=2000, le=2100)
     arrival_date_month: Month
@@ -94,6 +104,58 @@ class Booking(BaseModel):
                 "adr": 110.5,
                 "required_car_parking_spaces": 0,
                 "total_of_special_requests": 1,
+            }
+        }
+    }
+
+
+# ตัวอย่างการจองใหม่ 2 รายการ สำหรับหน้า /docs ของ /recommend-overbooking
+EXAMPLE_BOOKING_1 = dict(Booking.model_config["json_schema_extra"]["example"])
+EXAMPLE_BOOKING_2 = dict(EXAMPLE_BOOKING_1)
+EXAMPLE_BOOKING_2["lead_time"] = 5
+EXAMPLE_BOOKING_2["market_segment"] = "Direct"
+EXAMPLE_BOOKING_2["distribution_channel"] = "Direct"
+EXAMPLE_BOOKING_2["is_repeated_guest"] = 1
+EXAMPLE_BOOKING_2["agent"] = None
+
+
+class OverbookingRequest(BaseModel):
+    """การจองใหม่ของ 1 คืนที่รอตัดสินใจ + สภาพของโรงแรมคืนนั้น"""
+
+    hotel: HotelName
+    already_occupied: int = Field(
+        ge=0,
+        description="จำนวนห้องที่ถูกกันไว้แล้วจากแขกที่เช็กอินก่อนหน้าและยังพักอยู่คืนนี้ (บังคับส่ง)",
+    )
+    adr_ref: float | None = Field(
+        default=None,
+        gt=0,
+        description="ราคาห้องอ้างอิงของคืนนั้น ถ้าไม่ส่งจะใช้ adr เฉลี่ยของการจองใหม่",
+    )
+    k: float | None = Field(
+        default=None,
+        gt=0,
+        description="ตัวคูณค่าชดเชยเมื่อจองเกิน ถ้าไม่ส่งใช้ default_k จาก config.yaml",
+    )
+    bookings: list[Booking] = Field(min_length=1, max_length=1000)
+
+    # การจองทุกรายการต้องเป็นของโรงแรมเดียวกับที่ขอคำแนะนำ
+    @model_validator(mode="after")
+    def check_same_hotel(self):
+        for index in range(len(self.bookings)):
+            booking_hotel = self.bookings[index].hotel
+            if booking_hotel != self.hotel:
+                raise ValueError(
+                    f"การจองรายการที่ {index} เป็นของ {booking_hotel} ไม่ตรงกับ hotel={self.hotel}"
+                )
+        return self
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "hotel": "City Hotel",
+                "already_occupied": 189,
+                "bookings": [EXAMPLE_BOOKING_1, EXAMPLE_BOOKING_2],
             }
         }
     }
