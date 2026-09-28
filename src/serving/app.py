@@ -13,7 +13,9 @@ Endpoints:
 แล้วเปิด http://127.0.0.1:8000/docs
 """
 
+import asyncio.base_events
 import os
+import socket
 import sys
 import time
 from pathlib import Path
@@ -118,6 +120,21 @@ def predict_cancel_probabilities(X):
         probabilities = model.predict_proba(X)[:, 1]
     return probabilities
 
+
+# ---------- แก้ความช้า 40 ms เมื่อรันหลาย worker บน Linux ----------
+# Python จะเปิด TCP_NODELAY (ส่งข้อมูลทันที ไม่รอรวมก้อน) ให้เฉพาะ socket ที่ระบุ proto=TCP
+# แต่ uvicorn --workers สร้าง socket กลางโดยไม่ระบุ proto ทำให้ worker ทุกตัวไม่ได้เปิด TCP_NODELAY
+# ผลคือทุก request ช้าขึ้น ~40 ms บน Linux (เช่นใน Docker) วัดได้จริงด้วย Locust
+# จึงเปลี่ยนให้เปิด TCP_NODELAY กับ TCP socket ทุกตัว
+def set_tcp_nodelay_always(sock):
+    if (
+        sock.family in (socket.AF_INET, socket.AF_INET6)
+        and sock.type == socket.SOCK_STREAM
+    ):
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+
+asyncio.base_events._set_nodelay = set_tcp_nodelay_always
 
 # ---------- สร้าง API ----------
 app = FastAPI(title="Hotel Cancellation API", version="0.2.0")
@@ -263,7 +280,7 @@ def metrics():
 
 
 @app.post("/predict")
-def predict(booking: Booking):
+async def predict(booking: Booking):
     """รับ 1 รายการจอง แล้วคืนความน่าจะเป็นที่จะถูกยกเลิก (calibrate แล้ว)"""
     if model is None:
         raise HTTPException(status_code=503, detail="ยังโหลดโมเดลไม่ได้")
@@ -283,7 +300,7 @@ MAX_BATCH_SIZE = 1000  # กันไม่ให้ส่งมาทีเด�
 
 
 @app.post("/predict-batch")
-def predict_batch(bookings: list[Booking]):
+async def predict_batch(bookings: list[Booking]):
     """รับหลายรายการจอง แล้วคืนความน่าจะเป็นยกเลิกของแต่ละรายการ"""
     # เช็กข้อมูลที่ส่งมาก่อนเสมอ (ข้อมูลผิดต้องได้ 422 แม้ไม่มีโมเดล)
     if len(bookings) == 0:
@@ -327,7 +344,7 @@ def get_lead_time(booking):
 
 
 @app.post("/recommend-overbooking")
-def recommend_overbooking_for_night(request: OverbookingRequest):
+async def recommend_overbooking_for_night(request: OverbookingRequest):
     """
     แนะนำจำนวนห้องที่ควรรับจองเกิน (o_star) ของ 1 คืน
 
