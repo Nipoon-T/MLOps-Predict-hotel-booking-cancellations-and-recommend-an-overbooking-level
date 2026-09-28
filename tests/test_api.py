@@ -210,7 +210,7 @@ def test_metrics_has_slo_section():
     """ค่า SLO ที่ทีมตกลงกันหลังวัดจริง"""
     body = client.get("/metrics").json()
 
-    assert body["slo"]["predict_p95_target_ms"] == 100
+    assert body["slo"]["predict_p95_target_ms"] == 350
     assert body["slo"]["predict_p95_target_at_load_rps"] == 120
     assert body["slo"]["throughput_target_rps"] == 150
     assert body["slo"]["error_rate_target"] == 0.01
