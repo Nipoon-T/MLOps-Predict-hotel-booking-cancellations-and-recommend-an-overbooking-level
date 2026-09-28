@@ -9,7 +9,7 @@ locustfile.py — Load test ของ API (คนที่ 4: Serving + Load tes
     locust -f load_test/locustfile.py --host http://127.0.0.1:8000 --headless -u 20 -r 5 -t 60s --csv reports/load_test/baseline
 """
 
-from locust import HttpUser, constant, task
+from locust import FastHttpUser, constant, task
 
 # การจองที่ถูกต้อง (ชุดเดียวกับตัวอย่างใน /docs)
 GOOD_BOOKING = {
@@ -43,7 +43,7 @@ BAD_BOOKING["children"] = 0
 BAD_BOOKING["babies"] = 0
 
 
-class HotelApiUser(HttpUser):
+class HotelApiUser(FastHttpUser):
     # ไม่รอระหว่าง request เลย เพื่อดันให้ถึงขีดสุดของ API
     wait_time = constant(0)
 
