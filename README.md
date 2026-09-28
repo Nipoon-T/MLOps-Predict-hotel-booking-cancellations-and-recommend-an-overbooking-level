@@ -501,3 +501,110 @@ pytest
         ▼
 EDA / Reports
 ```
+
+---
+
+## Serving API และ Load Test (บทบาทที่ 4)
+
+API สำหรับทำนายความน่าจะเป็นที่การจองจะถูกยกเลิก และแนะนำจำนวนห้องที่ควรรับจองเกินของแต่ละคืน สร้างด้วย FastAPI โค้ดอยู่ใน `src/serving/`
+
+### สิ่งที่ต้องมีก่อนเปิด API
+
+* เตรียมข้อมูลครบจนได้ `data/processed/test.csv` (ดูหัวข้อ "ลำดับการรันหลัก")
+* เทรนและ calibrate โมเดลจนได้ `mlflow.db` และโมเดล `hotel-cancellation-classifier` alias `candidate`
+
+```powershell
+python src\modeling\train.py
+python src\modeling\calibrate.py
+```
+
+### เปิด API ในเครื่อง
+
+```powershell
+uvicorn src.serving.app:app --reload --port 8000
+```
+
+เปิดหน้าทดสอบได้ที่ http://127.0.0.1:8000/docs (ทุก endpoint มีตัวอย่างข้อมูลใส่ไว้ให้แล้ว)
+
+| Endpoint | หน้าที่ |
+| --- | --- |
+| `GET /health` | เช็กว่า API ทำงานและโหลดโมเดลได้ |
+| `GET /metrics` | จำนวน request, error rate และ latency (p50/p95) เทียบ SLO |
+| `POST /predict` | ทำนาย 1 การจอง (endpoint หลัก ใช้ตอนรับจองแบบ real-time) |
+| `POST /predict-batch` | ทำนายหลายการจองพร้อมกัน (สูงสุด 1,000 รายการ) |
+| `POST /recommend-overbooking` | ทำนายการจองใหม่ของ 1 คืน แล้วส่งเข้าชั้นตัดสินใจของบทบาทที่ 3 เพื่อหา `o_star` |
+
+ข้อมูลที่ผิดจะได้ **422** พร้อมบอกว่าช่องไหนผิด เช่น `lead_time` ติดลบ, ผู้เข้าพักเป็นศูนย์ทั้งหมด, `adr` ติดลบ, เดือนสะกดผิด, ชื่อโรงแรมไม่ถูกต้อง หรือขาดช่องที่บังคับ ส่วน `/recommend-overbooking` บังคับส่ง `already_occupied` เสมอ เพราะถ้าปล่อยเป็น 0 ระบบจะเข้าใจว่าห้องว่างทั้งหมดแล้วแนะนำ overbook เกินจริง
+
+### รันเทสของ API
+
+```powershell
+python -m pytest tests/test_api.py -v
+```
+
+มี 18 เทส ถ้าไม่มีโมเดลหรือ `test.csv` (เช่นใน CI) เทสที่ต้องใช้โมเดล 4 ข้อจะถูกข้าม (skip) ส่วนเทสข้อมูลผิดยังรันได้ครบ
+
+### รันใน Docker
+
+`mlflow.db` เก็บที่อยู่ไฟล์โมเดลเป็น path เต็มของเครื่องที่เทรน จึงใช้ใน container ตรงๆ ไม่ได้ ต้อง export โมเดลออกมาเป็นโฟลเดอร์ `serving_model/` ก่อน
+
+```powershell
+# 1) export โมเดล (ใส่ชื่อ alias ต่อท้ายได้ เช่น champion)
+python -m src.serving.export_model
+
+# 2) build image
+docker build -t hotel-api .
+
+# 3) run (mount โมเดลและ header ของข้อมูลเข้าไป, ค่าเริ่มต้น 8 workers)
+docker run -d --rm -p 8000:8000 -v "${PWD}\serving_model:/app/serving_model:ro" -v "${PWD}\data\processed:/app/data/processed:ro" --name hotel-api hotel-api
+
+# 4) เช็กว่าพร้อม (ต้องเห็น Application startup complete.)
+docker logs hotel-api --tail 3
+```
+
+เปลี่ยนจำนวน worker ได้ด้วย `-e WORKERS=4` ส่วนการเปลี่ยนโมเดล (เช่น rollback) ให้รัน `export_model.py` ด้วย alias ที่ต้องการ แล้วรีสตาร์ท container ไฟล์ `serving_model/EXPORTED_FROM.txt` บอกว่าเป็นโมเดลเวอร์ชันไหน
+
+### Load Test
+
+มี 2 แบบ ไฟล์อยู่ใน `load_test/`
+
+| ไฟล์ | ใช้ทดสอบ |
+| --- | --- |
+| `locustfile.py` | ความจุสูงสุด (ผู้ใช้ยิงต่อเนื่องไม่พัก, ข้อมูลถูก 10 : ข้อมูลผิด 1) |
+| `locustfile_slo.py` | SLO ที่อัตราคงที่ (แต่ละผู้ใช้ยิง 2 ครั้ง/วินาที, 60 ผู้ใช้ = 120 req/s) |
+
+ยิงจากในเครือข่ายเดียวกับ container เพื่อตัด overhead ของการส่งต่อ port ระหว่าง Windows กับ Docker ออก:
+
+```powershell
+# ความจุสูงสุด
+docker run --rm --network container:hotel-api -v "${PWD}\load_test:/mnt/load_test" -v "${PWD}\reports\load_test:/mnt/reports" locustio/locust:2.46.6 -f /mnt/load_test/locustfile.py --host http://127.0.0.1:8000 --headless -u 20 -r 5 -t 60s --csv /mnt/reports/docker_capacity
+
+# SLO ที่ 120 req/s
+docker run --rm --network container:hotel-api -v "${PWD}\load_test:/mnt/load_test" -v "${PWD}\reports\load_test:/mnt/reports" locustio/locust:2.46.6 -f /mnt/load_test/locustfile_slo.py --host http://127.0.0.1:8000 --headless -u 60 -r 10 -t 90s --csv /mnt/reports/docker_slo_120rps
+```
+
+ผลทุกรอบเก็บเป็น CSV ใน `reports/load_test/` ส่วน `load_test/profile_predict.py` ใช้วัดว่าแต่ละขั้นของการทำนายใช้เวลาเท่าไร (`python -m load_test.profile_predict`)
+
+### SLO และผลการวัด
+
+SLO ประกาศหลังวัดจริงใน Docker (8 workers, laptop 20 threads, Locust รันเครื่องเดียวกัน)
+
+| SLO | เป้า | วัดได้ | ผล |
+| --- | --- | --- | --- |
+| Throughput ต่อ container | ≥ 150 req/s | 158 req/s | ผ่าน |
+| p95 ของ `/predict` ที่ 120 req/s | ≤ 350 ms | 330 ms | ผ่าน |
+| Error rate (5xx) | ≤ 1% | 0% | ผ่าน |
+
+การปรับปรุงที่ทำระหว่างวัด (มีผลวัดก่อน-หลังใน `reports/load_test/`):
+
+* **บังคับให้โมเดลทำนายแบบ thread เดียว** โมเดลเทรนด้วย `n_jobs=-1` ซึ่งตอนทำนายทีละแถวทำให้ช้าลงเกือบ 2 เท่า (39 ms เทียบกับ 19 ms) ผลทำนายเหมือนเดิมทุกหลัก
+* **เปิด TCP_NODELAY ให้ทุก worker** uvicorn แบบหลาย worker บน Linux ไม่เปิดตัวเลือกนี้ ทำให้ทุก request ช้าขึ้น ~45 ms (request ที่ได้ 422 ลดจาก 50 ms เหลือ 2 ms หลังแก้)
+* **endpoint ที่เรียกโมเดลเป็น `async def`** ให้แต่ละ worker ทำทีละงาน แทนการแย่ง GIL กันใน thread pool
+* **SLO test ปิดการเชื่อมต่อหลังทุก request** เพราะการจองแต่ละรายการมาจากลูกค้าคนละราย ถ้าใช้การเชื่อมต่อค้างไว้ งานจะกระจุกอยู่บางตัว worker
+
+### ข้อจำกัดที่ทราบ
+
+* `/metrics` นับแยกต่อ worker ถ้ารันหลาย worker จะเห็นแค่สถิติของ worker ที่ตอบ request นั้น (ภาพรวมต้องใช้ Locust หรือ Prometheus)
+* ตัวเลข SLO วัดบน laptop ที่รัน Locust ร่วมกัน p95 แกว่งตามภาระของเครื่อง บนเซิร์ฟเวอร์แยกควรวัดใหม่
+* `already_occupied` ต้องมาจากระบบจองของโรงแรม เวอร์ชันนี้ผู้เรียกต้องส่งค่าเอง
+* บน Windows ถ้ารัน `uvicorn --workers` นอก Docker อาจมี worker พังตอนเริ่ม (`WinError 10022`) uvicorn จะเปิดตัวใหม่แทนให้เอง

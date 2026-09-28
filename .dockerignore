@@ -1,0 +1,15 @@
+# ไม่ส่งไฟล์พวกนี้เข้าไปตอน build (ทำให้ build เร็วและ image เล็ก)
+# โมเดลและข้อมูลจะ mount เข้าไปตอน run แทน
+.venv/
+.git/
+data/
+mlruns/
+mlflow.db
+serving_model/
+reports/
+load_test/
+tests/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
