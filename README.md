@@ -611,7 +611,7 @@ SLO ประกาศหลังวัดจริงใน Docker (8 workers,
 
 ## รันทั้งระบบด้วยคำสั่งเดียว (บทบาทที่ 5: Pipeline + Docker)
 
-ทั้งระบบถูกครอบด้วย Prefect flow เดียว (`pipeline/flow.py`) ตั้งแต่ตรวจข้อมูลจนเปิด API ใน Docker
+ทั้งระบบถูกครอบด้วย Prefect flow (DAG) ในโฟลเดอร์ `pipeline/` ตั้งแต่ตรวจข้อมูลจนเปิด API ใน Docker และวนกลับมา retrain เมื่อพบ drift
 
 ```text
 check raw file → download_data (SHA-256) → validate raw (บันทึกผลอย่างเดียว)
@@ -619,6 +619,18 @@ check raw file → download_data (SHA-256) → validate raw (บันทึก�
 → create_bad_data → pytest → train → calibrate (register alias candidate)
 → export_model → docker compose up → รอ /health = ok
 ```
+
+### ไฟล์ในโฟลเดอร์ `pipeline/`
+
+| ไฟล์ | หน้าที่ |
+| --- | --- |
+| `flow.py` | DAG หลัก: data / model / deploy / promote / rollback / demo ข้อมูลเสีย |
+| `run.py` | คำสั่งเดียว `python -m pipeline.run` และตัวเลือกทั้งหมด |
+| `registry.py` | จัดการ alias champion / candidate / previous_champion |
+| `production_sim.py` | จำลอง production รายสัปดาห์ + วงจร retrain |
+| `retrain.py` | สร้างหน้าต่างข้อมูลล่าสุด, retrain, gate |
+| `mock_drift.py` | ตัวตรวจ drift ปลอม (รอตัวจริงของบทบาทที่ 6) |
+| `HANDOFF_TO_ROLE6.md` | จุดที่บทบาทที่ 6 ต้องเสียบงาน |
 
 ### สิ่งที่ต้องมีก่อน
 
@@ -659,7 +671,7 @@ python -m pipeline.run
 
 เสร็จแล้วจะขึ้น `✅ PIPELINE FINISHED` และ API พร้อมใช้ที่ `http://127.0.0.1:8000/docs`
 
-### ตัวเลือก
+### คำสั่งทั้งหมด
 
 | คำสั่ง | ใช้เมื่อ |
 | --- | --- |
@@ -669,8 +681,15 @@ python -m pipeline.run
 | `python -m pipeline.run --skip-data` | ข้ามขั้นเตรียมข้อมูล (ต้องมี `data/processed/` แล้ว) |
 | `python -m pipeline.run --no-deploy` | ไม่เปิด Docker |
 | `python -m pipeline.run --alias champion` | export โมเดล alias อื่นไปให้ API |
-| `python -m pipeline.run --redeploy champion` | promote / rollback: export alias นี้แล้วรีสตาร์ท API อย่างเดียว |
+| `python -m pipeline.run --redeploy champion` | export alias นี้แล้วรีสตาร์ท API อย่างเดียว |
 | `python -m pipeline.run --demo-bad-data` | สาธิตว่าข้อมูลเสียถูกหยุดที่ validation gate |
+| `python -m pipeline.run --promote` | candidate → champion แล้ว API ใช้ทันที |
+| `python -m pipeline.run --rollback` | ย้อน champion เป็นตัวก่อนหน้า แล้ว API ใช้ทันที |
+| `python -m pipeline.registry status` | ดูว่า alias แต่ละตัวชี้ version ไหน |
+| `python -m pipeline.run --simulate` | จำลอง production รายสัปดาห์ (บันทึกอย่างเดียว ไม่แตะโมเดล) |
+| `python -m pipeline.run --simulate --retrain-on-drift` | วงจรเต็ม: drift → retrain → gate → promote → redeploy |
+
+ตัวเลือกเสริมของ `--simulate`: `--weeks N` (จำนวนสัปดาห์), `--cooldown N` (retrain ห่างกันอย่างน้อยกี่สัปดาห์ ค่าเริ่มต้น 4), `--drift-cmd "..."` (คำสั่งตรวจ drift)
 
 ### สาธิตข้อมูลเสียถูกหยุด
 
@@ -680,6 +699,75 @@ python -m pipeline.run --demo-bad-data
 
 ป้อน `data/bad/hotel_bookings_bad.csv` (สร้างโดย `src/create_bad_data.py`: `is_canceled = 2`, `lead_time = -10`, เดือน `Januar`, `adr = -50`, `is_repeated_guest = 3`) เข้า validation gate
 ผลที่ถูกต้องคือ flow หยุดพร้อมข้อความ `PIPELINE STOPPED AT VALIDATION GATE` และไม่มีการ clean / train / deploy ต่อ API ที่เปิดอยู่ไม่ถูกแตะต้อง
+
+### Model registry: promote และ rollback
+
+ใช้ alias 3 ตัวใน MLflow Registry (`hotel-cancellation-classifier`)
+
+| alias | ความหมาย |
+| --- | --- |
+| `candidate` | โมเดลใหม่ล่าสุดจาก `calibrate.py` ยังไม่ได้ขึ้นใช้งาน |
+| `champion` | โมเดลที่ API ใช้อยู่ |
+| `previous_champion` | champion ตัวก่อนหน้า เก็บไว้สำหรับ rollback |
+
+* `--promote` ย้าย champion เดิมไปเป็น `previous_champion` แล้วตั้ง candidate เป็น champion
+* `--rollback` สลับ `champion` กับ `previous_champion` (รันซ้ำอีกครั้งจะย้อนกลับได้)
+* ทั้งสองคำสั่ง export โมเดลใหม่และรีสตาร์ท API ให้ทันที ตรวจได้จาก `serving_model/EXPORTED_FROM.txt`
+
+### จำลอง production รายสัปดาห์และ retrain
+
+ต้องรัน `python -m pipeline.run` อย่างน้อยหนึ่งครั้งก่อน เพื่อให้มี `data/processed/production.csv`,
+`data/interim/hotel_bookings_clean.csv` และโมเดลใน `mlflow.db`
+โหมด `--retrain-on-drift` ต้องเปิด Docker Desktop ไว้ เพราะจะ redeploy API หลัง promote
+
+`pipeline/production_sim.py` แบ่ง `data/processed/production.csv` เป็นรายสัปดาห์ตามวันเข้าพัก (`data/production_weeks/week_XX.csv`) แล้ววนทีละสัปดาห์
+
+1. ตรวจ drift ของสัปดาห์นั้น (ผลที่ `reports/monitoring/week_XX.json`)
+2. ถ้าต้อง retrain และพ้น cooldown แล้ว → สร้างหน้าต่างข้อมูลล่าสุด 12 / 6 / 3 เดือน (train / validation / test) นับถอยจากวันหลังสัปดาห์นั้น
+3. เทรน + calibrate ด้วย `calibrate.py` เดิมของบทบาทที่ 2 บนหน้าต่างใหม่ → register เป็น candidate
+4. **gate** วัด candidate กับ champion บน test ของหน้าต่างใหม่ ผ่านเมื่อ ECE ≤ 0.05 และ PR-AUC ตกจาก champion ไม่เกิน 0.03 (ผลที่ `reports/monitoring/gate_<cutoff>.json`)
+5. ผ่าน → promote → redeploy / ไม่ผ่าน → ใช้ champion เดิม
+6. สรุปทุกสัปดาห์ที่ `reports/monitoring/simulation_summary.csv`
+
+**label มาช้า:** รู้ว่ายกเลิกจริงหรือไม่ก็ต่อเมื่อถึงวันเข้าพัก จึงตรวจแต่ละสัปดาห์ได้หลังสัปดาห์นั้นผ่านไปแล้วเท่านั้น
+
+ตัวตรวจ drift ตอนนี้เป็นตัวปลอม (`pipeline/mock_drift.py` สั่ง retrain ในสัปดาห์ที่กำหนดผ่าน `MOCK_DRIFT_WEEKS` ค่าเริ่มต้น `6,14`) ตัวจริงของบทบาทที่ 6 เสียบได้ด้วย `--drift-cmd` ข้อตกลงอยู่ใน `pipeline/HANDOFF_TO_ROLE6.md`
+
+ผลจากการรันจริง (`--simulate --weeks 8 --retrain-on-drift`, drift จำลองที่สัปดาห์ 6):
+
+| วัดบน test ของหน้าต่างใหม่ (2017-02-13 ถึง 2017-05-13) | PR-AUC | ECE |
+| --- | --- | --- |
+| champion เดิม (version 1) | 0.7833 | 0.0257 |
+| retrain บนข้อมูลล่าสุด (version 4) | 0.8028 | 0.0380 |
+
+gate ผ่าน → promote version 4 เป็น champion → API ใช้ตัวใหม่ วงจรทั้งหมดใช้เวลาราว 2 นาที
+(เลข version ในเครื่องอื่นอาจต่างกัน ขึ้นกับว่าเคยเทรนกี่รอบ)
+
+cancel rate รายสัปดาห์ของ production อยู่ที่ 0.40–0.47 สูงกว่า train (0.36) คือ prior shift ในข้อมูลจริง
+
+เรียกทีละขั้นได้ด้วย:
+
+```powershell
+python -m pipeline.retrain window 2017-05-14      # สร้างหน้าต่างข้อมูลที่ data/retrain/2017-05-14/
+python -m pipeline.retrain calibrate 2017-05-14   # เทรน + calibrate + register เป็น candidate
+python -m pipeline.retrain gate 2017-05-14        # exit 0 = ผ่าน, 1 = ไม่ผ่าน
+```
+
+### Prefect UI
+
+ดูกราฟ DAG และ log ของทุก run:
+
+```powershell
+# หน้าต่างที่ 1
+$env:PREFECT_SERVER_ANALYTICS_ENABLED="false"
+prefect server start
+
+# หน้าต่างที่ 2
+$env:PREFECT_API_URL="http://127.0.0.1:4200/api"
+python -m pipeline.run --skip-train
+```
+
+เปิด `http://127.0.0.1:4200` → Runs
 
 ### เวลาที่ใช้ (laptop ของทีม, Windows)
 
@@ -692,12 +780,17 @@ python -m pipeline.run --demo-bad-data
 | export_model | 4–6 s |
 | docker compose up (มี cache) | 6–15 s |
 | API พร้อม (8 workers โหลดโมเดล) | ~15 s |
+| retrain: สร้างหน้าต่างข้อมูล | ~3 s |
+| retrain: เทรน + calibrate + register | ~30 s |
+| gate (วัด candidate + champion) | ~11 s |
+| promote + export + restart API | ~50 s |
 
 build image ครั้งแรกใช้ ~4 นาที (ติดตั้ง requirements) ครั้งต่อไปใช้ cache
 
 ### ข้อควรรู้
 
 * container อ่าน `mlflow.db` ตรงๆ ไม่ได้ (จด path ของเครื่องที่เทรน) flow จึง export โมเดลเป็น `serving_model/` ก่อนเปิด API ทุกครั้ง
-* API โหลดโมเดลครั้งเดียวตอนเริ่ม เปลี่ยน alias แล้วต้องใช้ `--redeploy <alias>` เพื่อ export ใหม่และรีสตาร์ท
+* API โหลดโมเดลครั้งเดียวตอนเริ่ม เปลี่ยนโมเดลแล้วต้องใช้ `--promote` / `--rollback` / `--redeploy` เพื่อ export ใหม่และรีสตาร์ท
 * ดู log ของ API: `docker compose logs api` ปิด API: `docker compose down`
 * validate ข้อมูลดิบ **คาดว่าจะไม่ผ่าน** (adr ติดลบ 1 แถว, ผู้เข้าพักเป็นศูนย์ 180 แถว) flow จึงบันทึกผลเป็น warning แล้วไปต่อ gate จริงคือ validate หลัง clean
+* ข้อมูลที่ flow สร้าง (`data/production_weeks/`, `data/retrain/`) ถูก `.gitignore` กันไว้
