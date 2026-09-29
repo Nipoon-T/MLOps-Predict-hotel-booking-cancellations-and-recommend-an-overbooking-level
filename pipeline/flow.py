@@ -22,6 +22,7 @@ from prefect import flow, get_run_logger, task
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RAW_FILE = PROJECT_ROOT / "data" / "raw" / "hotel_bookings.csv"
 CLEAN_FILE = PROJECT_ROOT / "data" / "interim" / "hotel_bookings_clean.csv"
+BAD_FILE = PROJECT_ROOT / "data" / "bad" / "hotel_bookings_bad.csv"
 HEALTH_URL = "http://127.0.0.1:8000/health"
 
 # สคริปต์ของทีมพิมพ์ภาษาไทยและ emoji บน Windows ต้องบังคับ UTF-8 ไม่งั้นพังตอนพิมพ์
@@ -160,6 +161,12 @@ def wait_health(timeout_s: int = 120) -> None:
     raise StepFailed(f"API ไม่พร้อมภายใน {timeout_s} s (ล่าสุด: {last}) ลอง docker compose logs api")
 
 
+@task(name="validate-bad-data-gate")
+def validate_bad_gate(path: Path = BAD_FILE) -> None:
+    # gate เดียวกับข้อมูลจริง แต่ป้อนข้อมูลเสีย ต้อง fail แล้วหยุด flow
+    _run(_py("src/validate.py", str(path)), "validate bad data (gate)")
+
+
 # ------------------------------------------------------------
 # FLOWS
 # ------------------------------------------------------------
@@ -175,6 +182,21 @@ def data_pipeline(run_tests_step: bool = True) -> None:
     create_bad_data()
     if run_tests_step:
         run_tests()
+
+
+@flow(name="demo-bad-data")
+def demo_bad_data() -> None:
+    """สาธิต: ข้อมูลเสียต้องถูกหยุดที่ validation gate ก่อนถึง clean/train/deploy
+
+    ไม่แตะข้อมูลจริง, โมเดล หรือ API ที่เปิดอยู่
+    """
+    logger = get_run_logger()
+    if not BAD_FILE.exists():
+        create_bad_data()
+    validate_bad_gate()
+    # ถ้ามาถึงบรรทัดนี้แปลว่า gate ปล่อยข้อมูลเสียผ่าน ซึ่งผิด
+    logger.error("gate ปล่อยข้อมูลเสียผ่าน ต้องตรวจ validate.py")
+    raise StepFailed("ข้อมูลเสียผ่าน gate ได้ ซึ่งไม่ควรเกิดขึ้น")
 
 
 @flow(name="model-pipeline")
