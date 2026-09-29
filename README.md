@@ -608,3 +608,96 @@ SLO ประกาศหลังวัดจริงใน Docker (8 workers,
 * ตัวเลข SLO วัดบน laptop ที่รัน Locust ร่วมกัน p95 แกว่งตามภาระของเครื่อง บนเซิร์ฟเวอร์แยกควรวัดใหม่
 * `already_occupied` ต้องมาจากระบบจองของโรงแรม เวอร์ชันนี้ผู้เรียกต้องส่งค่าเอง
 * บน Windows ถ้ารัน `uvicorn --workers` นอก Docker อาจมี worker พังตอนเริ่ม (`WinError 10022`) uvicorn จะเปิดตัวใหม่แทนให้เอง
+
+## รันทั้งระบบด้วยคำสั่งเดียว (บทบาทที่ 5: Pipeline + Docker)
+
+ทั้งระบบถูกครอบด้วย Prefect flow เดียว (`pipeline/flow.py`) ตั้งแต่ตรวจข้อมูลจนเปิด API ใน Docker
+
+```text
+check raw file → download_data (SHA-256) → validate raw (บันทึกผลอย่างเดียว)
+→ clean_data → validate clean (GATE: ไม่ผ่านหยุดทั้ง flow) → split_data
+→ create_bad_data → pytest → train → calibrate (register alias candidate)
+→ export_model → docker compose up → รอ /health = ok
+```
+
+### สิ่งที่ต้องมีก่อน
+
+* Python **3.13** (ตรงกับ Dockerfile)
+* Docker Desktop เปิดอยู่
+* **Windows เท่านั้น:** เปิด Long Path ก่อนติดตั้ง Prefect (ชื่อโฟลเดอร์ repo ยาว ทำให้ path ของไฟล์ใน Prefect เกิน 260 ตัวอักษร)
+  เปิด Command Prompt แบบ **Run as administrator** แล้วรัน:
+
+  ```cmd
+  reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f
+  ```
+
+  ปิด terminal ทั้งหมดแล้วเปิดใหม่ (หรือ clone repo ไว้ที่ path สั้น เช่น `C:\dev\hotel` แทน)
+
+### ขั้นตอน
+
+**1. วางไฟล์ข้อมูล (ขั้นเดียวที่ทำมือ)**
+
+ดาวน์โหลด `hotel_bookings.csv` จาก Google Drive ของทีม (ลิงก์ในหัวข้อ "Google Drive Dataset") แล้ววางไว้ที่ `data/raw/hotel_bookings.csv`
+ถ้าไม่มีไฟล์นี้ pipeline จะหยุดทันทีพร้อมบอกว่าต้องทำอะไร
+
+**2. สร้าง environment และติดตั้ง**
+
+```powershell
+py -3.13 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements-pipeline.txt
+```
+
+`requirements-pipeline.txt` = `requirements.txt` + Prefect แยกไว้เพื่อไม่ให้ image ของ API ใหญ่ขึ้น
+ใช้ Prefect **3.7.2** เพราะตั้งแต่ 3.7.3 ขึ้นไปต้องใช้ fastapi ≥ 0.139 / starlette 1.x ซึ่งชนกับ `fastapi==0.115.0` ที่ใช้วัด SLO ไว้
+
+**3. รัน**
+
+```powershell
+python -m pipeline.run
+```
+
+เสร็จแล้วจะขึ้น `✅ PIPELINE FINISHED` และ API พร้อมใช้ที่ `http://127.0.0.1:8000/docs`
+
+### ตัวเลือก
+
+| คำสั่ง | ใช้เมื่อ |
+| --- | --- |
+| `python -m pipeline.run` | รันทั้งหมด: ข้อมูล → เทรน → export → เปิด API |
+| `python -m pipeline.run --skip-train` | ใช้โมเดลที่เทรนไว้แล้วใน `mlflow.db` |
+| `python -m pipeline.run --skip-tests` | ข้าม pytest |
+| `python -m pipeline.run --skip-data` | ข้ามขั้นเตรียมข้อมูล (ต้องมี `data/processed/` แล้ว) |
+| `python -m pipeline.run --no-deploy` | ไม่เปิด Docker |
+| `python -m pipeline.run --alias champion` | export โมเดล alias อื่นไปให้ API |
+| `python -m pipeline.run --redeploy champion` | promote / rollback: export alias นี้แล้วรีสตาร์ท API อย่างเดียว |
+| `python -m pipeline.run --demo-bad-data` | สาธิตว่าข้อมูลเสียถูกหยุดที่ validation gate |
+
+### สาธิตข้อมูลเสียถูกหยุด
+
+```powershell
+python -m pipeline.run --demo-bad-data
+```
+
+ป้อน `data/bad/hotel_bookings_bad.csv` (สร้างโดย `src/create_bad_data.py`: `is_canceled = 2`, `lead_time = -10`, เดือน `Januar`, `adr = -50`, `is_repeated_guest = 3`) เข้า validation gate
+ผลที่ถูกต้องคือ flow หยุดพร้อมข้อความ `PIPELINE STOPPED AT VALIDATION GATE` และไม่มีการ clean / train / deploy ต่อ API ที่เปิดอยู่ไม่ถูกแตะต้อง
+
+### เวลาที่ใช้ (laptop ของทีม, Windows)
+
+| ขั้น | เวลาโดยประมาณ |
+| --- | --- |
+| clean_data | 3–5 s |
+| split_data | 3–5 s |
+| pytest (76 เทส) | ~23 s |
+| train (5 การทดลอง) | ~30 s |
+| export_model | 4–6 s |
+| docker compose up (มี cache) | 6–15 s |
+| API พร้อม (8 workers โหลดโมเดล) | ~15 s |
+
+build image ครั้งแรกใช้ ~4 นาที (ติดตั้ง requirements) ครั้งต่อไปใช้ cache
+
+### ข้อควรรู้
+
+* container อ่าน `mlflow.db` ตรงๆ ไม่ได้ (จด path ของเครื่องที่เทรน) flow จึง export โมเดลเป็น `serving_model/` ก่อนเปิด API ทุกครั้ง
+* API โหลดโมเดลครั้งเดียวตอนเริ่ม เปลี่ยน alias แล้วต้องใช้ `--redeploy <alias>` เพื่อ export ใหม่และรีสตาร์ท
+* ดู log ของ API: `docker compose logs api` ปิด API: `docker compose down`
+* validate ข้อมูลดิบ **คาดว่าจะไม่ผ่าน** (adr ติดลบ 1 แถว, ผู้เข้าพักเป็นศูนย์ 180 แถว) flow จึงบันทึกผลเป็น warning แล้วไปต่อ gate จริงคือ validate หลัง clean
