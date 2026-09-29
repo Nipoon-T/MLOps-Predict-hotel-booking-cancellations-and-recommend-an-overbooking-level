@@ -6,12 +6,22 @@
   python -m pipeline.run --no-deploy          # ไม่เปิด Docker
   python -m pipeline.run --redeploy champion  # promote/rollback: export alias นี้แล้วรีสตาร์ท API
   python -m pipeline.run --demo-bad-data      # สาธิต: ข้อมูลเสียถูกหยุดที่ gate
+  python -m pipeline.run --promote            # candidate -> champion แล้วให้ API ใช้ทันที
+  python -m pipeline.run --promote challenger # alias อื่น -> champion
+  python -m pipeline.run --rollback           # champion กลับเป็นตัวก่อนหน้า แล้วให้ API ใช้ทันที
 """
 
 import argparse
 import sys
 
-from pipeline.flow import StepFailed, demo_bad_data, deploy_model, full_pipeline
+from pipeline.flow import (
+    StepFailed,
+    demo_bad_data,
+    deploy_model,
+    full_pipeline,
+    promote_and_deploy,
+    rollback_and_deploy,
+)
 
 
 def main() -> int:
@@ -23,6 +33,10 @@ def main() -> int:
     parser.add_argument("--no-deploy", action="store_true")
     parser.add_argument("--redeploy", metavar="ALIAS",
                         help="export alias นี้แล้วรีสตาร์ท API อย่างเดียว")
+    parser.add_argument("--promote", nargs="?", const="candidate", metavar="ALIAS",
+                        help="promote alias (ค่าเริ่มต้น candidate) เป็น champion แล้ว redeploy")
+    parser.add_argument("--rollback", action="store_true",
+                        help="ย้อน champion เป็นตัวก่อนหน้าแล้ว redeploy")
     parser.add_argument("--demo-bad-data", action="store_true",
                         help="สาธิตว่าข้อมูลเสียถูกหยุดที่ validation gate")
     args = parser.parse_args()
@@ -44,7 +58,11 @@ def main() -> int:
         return 1
 
     try:
-        if args.redeploy:
+        if args.promote:
+            promote_and_deploy(source_alias=args.promote)
+        elif args.rollback:
+            rollback_and_deploy()
+        elif args.redeploy:
             deploy_model(alias=args.redeploy, restart=True)
         else:
             full_pipeline(
