@@ -1,0 +1,23 @@
+{
+  "cutoff": "2017-05-14",
+  "passed": true,
+  "reasons": [],
+  "candidate": {
+    "pr_auc": 0.8014,
+    "roc_auc": 0.8569,
+    "log_loss": 0.4443,
+    "brier": 0.1479,
+    "ece": 0.0374
+  },
+  "champion": {
+    "pr_auc": 0.7848,
+    "roc_auc": 0.8484,
+    "log_loss": 0.4543,
+    "brier": 0.1516,
+    "ece": 0.0248
+  },
+  "rules": {
+    "max_ece": 0.05,
+    "max_pr_auc_drop": 0.03
+  }
+}

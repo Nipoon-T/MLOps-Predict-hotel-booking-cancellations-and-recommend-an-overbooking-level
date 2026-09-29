@@ -1,0 +1,9 @@
+﻿week,rows,cancel_rate,retrain_signal,reasons,action
+1,1193,0.4174,False,,-
+2,1385,0.4202,False,,-
+3,1234,0.4311,False,,-
+4,1357,0.4643,False,,-
+5,1597,0.4671,False,,-
+6,1309,0.4034,True,MOCK: สัปดาห์ 6 อยู่ใน MOCK_DRIFT_WEEKS,retrain → gate ผ่าน → promote → redeploy
+7,1456,0.4732,False,,-
+8,1513,0.4038,False,,-
