@@ -1,0 +1,5 @@
+# ไลบรารีสำหรับรัน pipeline (ไม่ใส่ใน image ของ API เพื่อให้ image เล็ก)
+# prefect 3.7.2 เป็นเวอร์ชันล่าสุดที่เข้ากับ fastapi==0.115.0 ของบทบาทที่ 4
+# (3.7.3 ขึ้นไปต้องใช้ starlette>=1.0.1 / fastapi>=0.139 ซึ่งจะเปลี่ยน API ที่วัด SLO ไว้แล้ว)
+-r requirements.txt
+prefect==3.7.2
