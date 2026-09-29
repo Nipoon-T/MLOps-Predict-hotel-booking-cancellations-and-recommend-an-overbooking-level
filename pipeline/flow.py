@@ -130,16 +130,38 @@ def export_model(alias: str) -> None:
 
 
 # ------------------------------------------------------------
+# REGISTRY
+# ------------------------------------------------------------
+
+@task(name="promote-to-champion")
+def promote_task(source_alias: str) -> str:
+    from pipeline import registry
+    try:
+        return registry.promote(source_alias)
+    except registry.RegistryError as exc:
+        raise StepFailed(str(exc)) from exc
+
+
+@task(name="rollback-champion")
+def rollback_task() -> str:
+    from pipeline import registry
+    try:
+        return registry.rollback()
+    except registry.RegistryError as exc:
+        raise StepFailed(str(exc)) from exc
+
+
+# ------------------------------------------------------------
 # SERVING
 # ------------------------------------------------------------
 
 @task(name="compose-up")
 def compose_up(restart: bool = False) -> None:
+    # up -d: ถ้า container ยังไม่เปิดจะเปิดให้ ถ้าเปิดอยู่แล้วจะไม่ทำอะไร
+    _run(["docker", "compose", "up", "-d", "--build"], "docker compose up")
     if restart:
         # API โหลดโมเดลครั้งเดียวตอนเริ่ม เปลี่ยนโมเดลแล้วต้องรีสตาร์ท
         _run(["docker", "compose", "restart", "api"], "docker compose restart api")
-    else:
-        _run(["docker", "compose", "up", "-d", "--build"], "docker compose up")
 
 
 @task(name="wait-health")
@@ -214,6 +236,20 @@ def deploy_model(alias: str = "candidate", restart: bool = False) -> None:
     export_model(alias)
     compose_up(restart=restart)
     wait_health()
+
+
+@flow(name="promote-and-deploy")
+def promote_and_deploy(source_alias: str = "candidate") -> None:
+    """promote alias ที่ระบุเป็น champion แล้วให้ API ใช้ champion ทันที"""
+    promote_task(source_alias)
+    deploy_model(alias="champion", restart=True)
+
+
+@flow(name="rollback-and-deploy")
+def rollback_and_deploy() -> None:
+    """ย้อน champion กลับเป็นตัวก่อนหน้า แล้วให้ API ใช้ทันที"""
+    rollback_task()
+    deploy_model(alias="champion", restart=True)
 
 
 @flow(name="hotel-full-pipeline")
