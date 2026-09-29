@@ -1,0 +1,22 @@
+# docker-compose.yml — บทบาทที่ 5 (Pipeline + Docker)
+# ต้อง export โมเดลก่อน up เสมอ (python -m src.serving.export_model หรือ python -m pipeline.run)
+services:
+  api:
+    build: .
+    image: hotel-api
+    container_name: hotel-api
+    ports:
+      - "8000:8000"
+    environment:
+      WORKERS: "8"
+    volumes:
+      - ./serving_model:/app/serving_model:ro
+      - ./data/processed:/app/data/processed:ro
+    healthcheck:
+      # image เป็น python:3.13-slim ไม่มี curl จึงใช้ python เช็กแทน
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    restart: unless-stopped
