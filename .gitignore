@@ -139,3 +139,6 @@ dist/
 mlflow.db
 mlruns/
 serving_model/
+# Pipeline outputs (role 5)
+data/production_weeks/
+data/retrain/
