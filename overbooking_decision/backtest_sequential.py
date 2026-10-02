@@ -17,8 +17,8 @@ from __future__ import annotations
 
 import pandas as pd
 
-from policies import policy_avg_rate, policy_fixed, policy_no_overbook
-from simulate import find_optimal_overbook
+from .policies import policy_avg_rate, policy_fixed, policy_no_overbook
+from .simulate import find_optimal_overbook
 
 
 def _o_for_policy(

@@ -13,3 +13,4 @@ uvicorn==0.30.6
 ruff==0.16.9
 httpx==0.28.1
 locust==2.46.6
+pandera==0.33.1

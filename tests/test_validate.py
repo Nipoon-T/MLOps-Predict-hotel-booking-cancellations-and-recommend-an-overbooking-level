@@ -1,20 +1,20 @@
-import pandas as pd
+import os
 import subprocess
 import sys
 
+import pandas as pd
+
+from src.split_data import sha256_file, temporal_split
 from src.validate import (
-    validate_columns,
+    get_missingness_report,
     validate_binary_values,
-    validate_non_negative_values,
-    validate_months,
-    validate_years,
+    validate_columns,
     validate_guest_count,
     validate_missingness,
-    get_missingness_report,
+    validate_months,
+    validate_non_negative_values,
+    validate_years,
 )
-
-from src.split_data import temporal_split, sha256_file
-
 
 RAW_DATA_PATH = "data/raw/hotel_bookings.csv"
 CLEAN_DATA_PATH = "data/interim/hotel_bookings_clean.csv"
@@ -160,14 +160,17 @@ def test_zero_guest_count_is_detected():
 
 def test_validation_cli_returns_exit_code_1_for_bad_data():
     result = subprocess.run(
-        [
-            sys.executable,
-            "src/validate.py",
-            "data/bad/hotel_bookings_bad.csv",
-        ],
-        capture_output=True,
-        text=True,
-    )
+    [
+        sys.executable,
+        "src/validate.py",
+        "data/bad/hotel_bookings_bad.csv",
+    ],
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+    check=False,
+    env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+)
 
     assert result.returncode == 1
     assert "VALIDATION FAILED" in result.stdout

@@ -1,7 +1,9 @@
 {
   "cutoff": "2017-05-14",
-  "passed": true,
-  "reasons": [],
+  "passed": false,
+  "reasons": [
+    "ECE 0.0374 > 0.03"
+  ],
   "candidate": {
     "pr_auc": 0.8014,
     "roc_auc": 0.8569,
@@ -22,7 +24,7 @@
     "delta": 0.0
   },
   "rules": {
-    "max_ece": 0.05,
+    "max_ece": 0.03,
     "max_pr_auc_drop": 0.03,
     "min_profit_vs_champion": true
   }
