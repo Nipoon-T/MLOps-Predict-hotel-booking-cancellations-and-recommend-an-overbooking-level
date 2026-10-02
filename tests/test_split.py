@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 
 from src.split_data import (
-    temporal_split,
     check_split_integrity,
     month_start,
     sha256_file,
+    temporal_split,
 )
 
 
