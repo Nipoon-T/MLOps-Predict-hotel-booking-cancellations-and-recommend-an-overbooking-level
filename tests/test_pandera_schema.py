@@ -2,8 +2,6 @@ import pandas as pd
 import pandera.pandas as pa
 
 from schemas.hotel_booking_schema import (
-    BINARY_COLUMNS,
-    NON_NEGATIVE_COLUMNS,
     VALID_MONTHS,
     VALID_YEARS,
 )

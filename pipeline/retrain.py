@@ -109,7 +109,9 @@ def check_gate(cutoff: str) -> dict:
 
     profit = None
     if champ is not None:
-        from overbooking_decision.backtest_sequential import backtest_policies_sequential
+        from overbooking_decision.backtest_sequential import (
+            backtest_policies_sequential,
+        )
         from overbooking_decision.cost_config import load_config
         from overbooking_decision.real_data_adapter import build_backtest_dataset
 

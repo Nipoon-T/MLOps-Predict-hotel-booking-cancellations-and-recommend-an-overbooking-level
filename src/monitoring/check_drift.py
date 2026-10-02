@@ -4,11 +4,10 @@ import json
 import sys
 from pathlib import Path
 
-import pandas as pd
 import nannyml as nml
+import pandas as pd
 from evidently import Report
 from evidently.presets import DataDriftPreset
-
 
 REFERENCE_PATH = Path("data/processed/train.csv")
 REPORT_DIR = Path("reports/monitoring/drift")
@@ -120,7 +119,7 @@ def count_nanny_alerts(results) -> int:
 
         return count
 
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         print(
             f"Warning: unable to count NannyML alerts: {exc}"
         )
