@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import subprocess
 import sys
@@ -160,14 +162,16 @@ def test_zero_guest_count_is_detected():
 
 def test_validation_cli_returns_exit_code_1_for_bad_data():
     result = subprocess.run(
-        [
-            sys.executable,
-            "src/validate.py",
-            "data/bad/hotel_bookings_bad.csv",
-        ],
-        capture_output=True,
-        text=True,
-    )
+    [
+        sys.executable,
+        "src/validate.py",
+        "data/bad/hotel_bookings_bad.csv",
+    ],
+    capture_output=True,
+    text=True,
+    encoding="utf-8",
+    env={**os.environ, "PYTHONIOENCODING": "utf-8"},
+)
 
     assert result.returncode == 1
     assert "VALIDATION FAILED" in result.stdout

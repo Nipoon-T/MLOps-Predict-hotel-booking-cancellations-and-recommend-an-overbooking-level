@@ -9,7 +9,7 @@
 """
 from __future__ import annotations
 
-from simulate import find_optimal_overbook
+from .simulate import find_optimal_overbook
 
 
 def policy_no_overbook(capacity: int) -> int:

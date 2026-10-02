@@ -1,0 +1,31 @@
+{
+  "week": 8,
+  "retrain": true,
+  "reasons": [
+    "NannyML detected 22 drift alert(s)"
+  ],
+  "evidence": {
+    "evidently_report": "reports\\monitoring\\drift\\evidently_week_08.html",
+    "nannyml_alerts": 22,
+    "nannyml_features_checked": [
+      "lead_time",
+      "stays_in_weekend_nights",
+      "stays_in_week_nights",
+      "adults",
+      "children",
+      "babies",
+      "booking_changes",
+      "days_in_waiting_list",
+      "adr",
+      "required_car_parking_spaces",
+      "total_of_special_requests"
+    ],
+    "prior_shift": {
+      "reference_cancellation_rate": 0.3580068420623931,
+      "current_cancellation_rate": 0.365545010066149,
+      "absolute_gap": 0.007538168003755896,
+      "threshold": 0.05,
+      "triggered": false
+    }
+  }
+}

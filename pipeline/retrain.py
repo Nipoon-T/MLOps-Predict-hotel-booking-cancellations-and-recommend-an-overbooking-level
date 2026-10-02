@@ -102,12 +102,61 @@ def check_gate(cutoff: str) -> dict:
     if cand["ece"] > MAX_ECE:
         reasons.append(f"ECE {cand['ece']} > {MAX_ECE}")
     if champ is not None and cand["pr_auc"] < champ["pr_auc"] - MAX_PR_AUC_DROP:
-        reasons.append(f"PR-AUC {cand['pr_auc']} ตกจาก champion {champ['pr_auc']} เกิน {MAX_PR_AUC_DROP}")
-    # TODO(บทบาทที่ 6): เกณฑ์กำไรจำลองไม่ต่ำกว่า champion (ใช้ overbooking_decision)
+        reasons.append(
+            f"PR-AUC {cand['pr_auc']} ตกจาก champion "
+            f"{champ['pr_auc']} เกิน {MAX_PR_AUC_DROP}"
+        )
 
-    report = {"cutoff": cutoff, "passed": not reasons, "reasons": reasons,
-              "candidate": cand, "champion": champ,
-              "rules": {"max_ece": MAX_ECE, "max_pr_auc_drop": MAX_PR_AUC_DROP}}
+    profit = None
+    if champ is not None:
+        from overbooking_decision.backtest_sequential import backtest_policies_sequential
+        from overbooking_decision.cost_config import load_config
+        from overbooking_decision.real_data_adapter import build_backtest_dataset
+
+        test_path = window_dir(cutoff) / "test.csv"
+        cost_config = load_config()
+
+        def evaluate_profit(alias: str) -> float:
+            dataset = build_backtest_dataset(
+                str(test_path),
+                model_uri=f"models:/{MODEL_NAME}@{alias}",
+            )
+            result = backtest_policies_sequential(
+                dataset,
+                cost_config,
+                policies=["model"],
+            )
+            if result.empty:
+                raise RuntimeError(f"profit backtest ว่างสำหรับ alias {alias}")
+            return round(float(result["profit"].sum()), 4)
+
+        candidate_profit = evaluate_profit("candidate")
+        champion_profit = evaluate_profit("champion")
+
+        profit = {
+            "candidate": candidate_profit,
+            "champion": champion_profit,
+            "delta": round(candidate_profit - champion_profit, 4),
+        }
+
+        if candidate_profit < champion_profit:
+            reasons.append(
+                f"profit {candidate_profit} ต่ำกว่า champion {champion_profit}"
+            )
+
+    report = {
+        "cutoff": cutoff,
+        "passed": not reasons,
+        "reasons": reasons,
+        "candidate": cand,
+        "champion": champ,
+        "profit": profit,
+        "rules": {
+            "max_ece": MAX_ECE,
+            "max_pr_auc_drop": MAX_PR_AUC_DROP,
+            "min_profit_vs_champion": True,
+        },
+    }
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
     (REPORT_DIR / f"gate_{cutoff}.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
