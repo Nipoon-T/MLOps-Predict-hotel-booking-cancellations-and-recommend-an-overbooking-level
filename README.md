@@ -794,3 +794,30 @@ build image ครั้งแรกใช้ ~4 นาที (ติดตั�
 * ดู log ของ API: `docker compose logs api` ปิด API: `docker compose down`
 * validate ข้อมูลดิบ **คาดว่าจะไม่ผ่าน** (adr ติดลบ 1 แถว, ผู้เข้าพักเป็นศูนย์ 180 แถว) flow จึงบันทึกผลเป็น warning แล้วไปต่อ gate จริงคือ validate หลัง clean
 * ข้อมูลที่ flow สร้าง (`data/production_weeks/`, `data/retrain/`) ถูก `.gitignore` กันไว้
+
+
+#### ใช้ตัวตรวจ drift จริง (Evidently + NannyML)
+
+NannyML 0.13.1 รองรับแค่ Python ต่ำกว่า 3.13 จึงแยก environment สำหรับ monitoring เป็น Python 3.12
+ไม่กระทบไลบรารีของโมเดลและ API ที่ใช้ Python 3.13
+
+```powershell
+py -3.12 -m venv .venv-monitor
+.venv-monitor\Scripts\pip install -r requirements-monitoring.txt
+```
+
+แล้วส่งตัวตรวจจริงให้วงจร retrain ผ่าน `--drift-cmd` (รันจาก root ของ repo, activate `.venv` ปกติ):
+
+```powershell
+python -m pipeline.run --simulate --weeks 8 --retrain-on-drift --drift-cmd ".venv-monitor\Scripts\python.exe src/monitoring/check_drift.py {week_csv} {out_json}"
+```
+
+ผลจริง (8 สัปดาห์): ตัวตรวจส่งสัญญาณทุกสัปดาห์ cooldown 4 สัปดาห์จำกัดให้ retrain ที่สัปดาห์ 1 และ 5
+
+| รอบ | หน้าต่างข้อมูลถึง | PR-AUC champion → candidate | ECE champion → candidate | ผล |
+| --- | --- | --- | --- | --- |
+| สัปดาห์ 1 | 2017-04-08 | 0.7722 (v1) → 0.7792 (v5) | 0.0386 → 0.0464 | ผ่าน → promote |
+| สัปดาห์ 5 | 2017-05-06 | 0.7824 (v5) → 0.7943 (v6) | 0.0370 → 0.0358 | ผ่าน → promote |
+
+ผลแต่ละสัปดาห์อยู่ที่ `reports/monitoring/week_XX.json`, gate ที่ `reports/monitoring/gate_<cutoff>.json`
+และรายงาน Evidently ที่ `reports/monitoring/drift/`
