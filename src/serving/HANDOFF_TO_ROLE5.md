@@ -101,7 +101,7 @@ docker compose restart api
 
 ## 6. เรื่องที่บทบาทที่ 6 (CI/CD + Monitoring) ควรรู้
 
-* `python -m pytest tests/test_api.py` รันใน CI ได้แม้ไม่มีโมเดล (เทสที่ต้องใช้โมเดล 4 ข้อจะ skip เอง)
+* `python -m pytest tests/test_api.py` รันใน CI ได้แม้ไม่มีโมเดล (เทสที่ต้องใช้โมเดล 3 ข้อจะ skip เอง เหลือผ่าน 15 ข้อ)
 * `ruff check src/serving load_test tests/test_api.py` ผ่านทั้งหมด (ruff 0.16.9)
 * `/metrics` ตอบเป็น JSON และนับแยกต่อ worker ถ้ารัน 8 worker จะเห็นแค่ของ worker ที่ตอบ request นั้น ถ้าต้องการภาพรวมต้องใช้ Prometheus
 * SLO สำหรับตั้ง alert: throughput ≥ 150 req/s, p95 ≤ 350 ms ที่ 120 req/s, error rate (5xx) ≤ 1%
