@@ -1,0 +1,34 @@
+@'
+========================================================================
+                 PANDERA SCHEMA VALIDATION FAIL Test
+========================================================================
+
+Platform : Windows
+Python   : 3.13.7
+Pandera  : Schema Validation
+
+FAIL 1  [PASS - Error Detected]
+------------------------------------------------------------------------
+Test   : Negative lead_time
+Input  : lead_time = -1
+Rule   : lead_time must be >= 0
+Reason : Pandera rejected a negative lead_time value
+Error  : SchemaError
+
+FAIL 2  [PASS - Error Detected]
+------------------------------------------------------------------------
+Test   : Invalid is_canceled
+Input  : is_canceled = 2
+Rule   : is_canceled must be 0 or 1
+Reason : Pandera rejected an invalid cancellation value
+Error  : SchemaError
+
+========================================================================
+RESULT
+========================================================================
+FAIL 1 : DETECTED - Negative lead_time
+FAIL 2 : DETECTED - Invalid is_canceled value
+
+2/2 invalid-data cases were correctly rejected by Pandera
+========================================================================
+'@ | Set-Content -Encoding UTF8 reports\pandera\pandera_negative_test.txt
