@@ -1,5 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
+import pytest
 
 from schemas.hotel_booking_schema import (
     VALID_MONTHS,
@@ -97,3 +98,8 @@ def test_invalid_cancellation_value_fails():
         return
 
     raise AssertionError("Pandera should reject invalid is_canceled")
+def test_bad_dataset_fails_pandera():
+    df = pd.read_csv("tests/fixtures/pandera_bad.csv")
+
+    with pytest.raises(pa.errors.SchemaError):
+        schema.validate(df)

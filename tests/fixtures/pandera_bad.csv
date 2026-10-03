@@ -1,0 +1,6 @@
+hotel,is_canceled,lead_time,arrival_date_year,arrival_date_month,adr,is_repeated_guest
+City Hotel,2,10,2017,July,100.0,0
+Resort Hotel,0,-5,2016,August,120.0,1
+City Hotel,1,20,2017,Januar,150.0,0
+Resort Hotel,0,30,2016,June,-50.0,1
+City Hotel,1,40,2017,May,200.0,3
