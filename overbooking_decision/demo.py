@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from backtest import aggregate_results, backtest_policies
 from backtest_sequential import backtest_policies_sequential
 from cost_config import load_config

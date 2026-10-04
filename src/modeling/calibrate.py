@@ -26,10 +26,10 @@ import tempfile
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")  # ไม่ต้องเปิดหน้าต่างกราฟ เซฟเป็นไฟล์อย่างเดียว
 import matplotlib.pyplot as plt
 import mlflow
-import numpy as np
 import pandas as pd
 from sklearn.calibration import CalibratedClassifierCV, calibration_curve
 from sklearn.compose import ColumnTransformer
@@ -42,12 +42,11 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from features import build_features, get_target  # noqa: E402
-from train import (  # noqa: E402
-    NUMERIC_FEATURES,
+from features import build_features, get_target
+from train import (
     CATEGORICAL_FEATURES,
+    NUMERIC_FEATURES,
     compute_metrics,
-    expected_calibration_error,
 )
 
 TRAIN_PATH = str(PROJECT_ROOT / "data" / "processed" / "train.csv")

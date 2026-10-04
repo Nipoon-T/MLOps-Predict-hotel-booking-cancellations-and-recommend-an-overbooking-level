@@ -50,7 +50,7 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from features import build_features, get_target  # noqa: E402
+from features import build_features, get_target
 
 try:
     from lightgbm import LGBMClassifier

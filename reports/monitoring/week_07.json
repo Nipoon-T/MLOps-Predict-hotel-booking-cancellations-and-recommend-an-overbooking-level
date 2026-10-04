@@ -6,7 +6,7 @@
     "Cancellation-rate gap exceeded 5%"
   ],
   "evidence": {
-    "evidently_report": "reports\\monitoring\\drift\\evidently_week_07.html",
+    "evidently_report": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\reports\\monitoring\\drift\\evidently_week_07.html",
     "nannyml_alerts": 5,
     "nannyml_features_checked": [
       "lead_time",
@@ -27,6 +27,33 @@
       "absolute_gap": 0.11520744365189262,
       "threshold": 0.05,
       "triggered": true
+    },
+    "concept_drift": {
+      "available": true,
+      "triggered": false,
+      "model": {
+        "name": "hotel-cancellation-classifier",
+        "alias": "champion"
+      },
+      "baseline": {
+        "dataset": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\data\\processed\\test.csv",
+        "rows": 12789,
+        "pr_auc": 0.7701176407486796,
+        "ece": 0.048184395472336425
+      },
+      "current": {
+        "rows": 1456,
+        "pr_auc": 0.8847640088297428,
+        "ece": 0.04182190881506354
+      },
+      "thresholds": {
+        "max_pr_auc_drop": 0.03,
+        "max_ece": 0.05
+      },
+      "pr_auc_drop": -0.11464636808106321,
+      "pr_auc_triggered": false,
+      "ece_triggered": false,
+      "reasons": []
     }
   }
 }

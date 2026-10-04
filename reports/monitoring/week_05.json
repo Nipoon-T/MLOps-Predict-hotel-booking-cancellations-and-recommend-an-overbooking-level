@@ -3,10 +3,11 @@
   "retrain": true,
   "reasons": [
     "NannyML detected 5 drift alert(s)",
-    "Cancellation-rate gap exceeded 5%"
+    "Cancellation-rate gap exceeded 5%",
+    "Concept/performance drift: ECE 0.0502 >0.05"
   ],
   "evidence": {
-    "evidently_report": "reports\\monitoring\\drift\\evidently_week_05.html",
+    "evidently_report": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\reports\\monitoring\\drift\\evidently_week_05.html",
     "nannyml_alerts": 5,
     "nannyml_features_checked": [
       "lead_time",
@@ -27,6 +28,35 @@
       "absolute_gap": 0.10911901892696196,
       "threshold": 0.05,
       "triggered": true
+    },
+    "concept_drift": {
+      "available": true,
+      "triggered": true,
+      "model": {
+        "name": "hotel-cancellation-classifier",
+        "alias": "champion"
+      },
+      "baseline": {
+        "dataset": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\data\\processed\\test.csv",
+        "rows": 12789,
+        "pr_auc": 0.7720398391530494,
+        "ece": 0.05063009548443699
+      },
+      "current": {
+        "rows": 1597,
+        "pr_auc": 0.8305384947060952,
+        "ece": 0.05022583083176325
+      },
+      "thresholds": {
+        "max_pr_auc_drop": 0.03,
+        "max_ece": 0.05
+      },
+      "pr_auc_drop": -0.058498655553045786,
+      "pr_auc_triggered": false,
+      "ece_triggered": true,
+      "reasons": [
+        "Concept/performance drift: ECE 0.0502 >0.05"
+      ]
     }
   }
 }

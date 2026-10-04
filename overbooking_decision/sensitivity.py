@@ -8,7 +8,6 @@ v2: รับ backtest_fn เป็นพารามิเตอร์ได้
 from __future__ import annotations
 
 import pandas as pd
-
 from backtest import aggregate_results, backtest_policies
 
 
