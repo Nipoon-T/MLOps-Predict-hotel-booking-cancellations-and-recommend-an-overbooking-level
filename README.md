@@ -876,3 +876,35 @@ python -m pipeline.run --simulate --weeks 8 --retrain-on-drift --drift-cmd ".ven
 ถ้า `champion` ยังไม่มีใน MLflow Registry ส่วน Concept Drift จะถูกระบุเป็น
 `available=false` และไม่ trigger จากส่วนนี้ แต่ Data Drift/NannyML และ Prior Shift
 ยังทำงานตามปกติ
+
+
+### เวลาที่ใช้ (laptop ของทีม, Windows)
+
+รันเต็ม `python -m pipeline.run` จบใน **3 นาที 44 วินาที** (มี Docker image cache แล้ว)
+
+| subflow | เวลา | ขั้นที่ใช้เวลามาก |
+| --- | --- | --- |
+| data-pipeline | 56 s | pytest 80 เทส 32 s, clean 6 s, split 6 s |
+| model-pipeline | 2 นาที 7 s | train 5 การทดลอง 80 s, calibrate + register 47 s |
+| deploy-model | 38 s | docker compose 17 s, รอ API พร้อม 15 s, export 5 s |
+
+| ขั้นในวงจร retrain | เวลา |
+| --- | --- |
+| ตรวจ drift ต่อสัปดาห์ (Evidently + NannyML) | 15–40 s |
+| สร้างหน้าต่างข้อมูล | ~4 s |
+| retrain + calibrate + register | 35–90 s |
+| gate (วัด candidate + champion) | 14–17 s |
+| promote + export + restart API | ~50 s |
+
+build image ใหม่ (ครั้งแรก หรือเมื่อ `requirements.txt` เปลี่ยน) ใช้เพิ่ม 4–5 นาที
+
+### หลักฐานการรันจริง
+
+| สิ่งที่แสดง | ไฟล์ |
+| --- | --- |
+| รันเต็ม 3 subflow ใน Prefect UI (3m 44s) | `docs/evidence/pipeline/prefect_full_pipeline.png` |
+| ข้อมูลเสียถูกหยุดที่ validation gate | `docs/evidence/pipeline/prefect_demo_bad_data.png` |
+| MLflow registry ก่อน rollback (champion v6) | `docs/evidence/registry/registry_before_rollback.png` |
+| MLflow registry หลัง rollback (champion v5) | `docs/evidence/registry/registry_after_rollback.png` |
+| ผล gate ของ retrain ทั้ง 2 รอบ | `reports/monitoring/gate_2017-04-08.json`, `gate_2017-05-06.json` |
+| ผลตรวจ drift รายสัปดาห์ | `reports/monitoring/simulation_summary.csv`, `reports/monitoring/drift/` |
