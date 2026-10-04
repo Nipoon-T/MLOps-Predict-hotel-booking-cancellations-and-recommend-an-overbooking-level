@@ -1,0 +1,29 @@
+{
+  "cutoff": "2017-06-03",
+  "passed": true,
+  "reasons": [],
+  "candidate": {
+    "pr_auc": 0.8236,
+    "roc_auc": 0.8659,
+    "log_loss": 0.4327,
+    "brier": 0.1452,
+    "ece": 0.0345
+  },
+  "champion": {
+    "pr_auc": 0.8266,
+    "roc_auc": 0.8649,
+    "log_loss": 0.4358,
+    "brier": 0.1465,
+    "ece": 0.0406
+  },
+  "profit": {
+    "candidate": 1561629.788,
+    "champion": 1558970.3764,
+    "delta": 2659.4116
+  },
+  "rules": {
+    "max_ece": 0.05,
+    "max_pr_auc_drop": 0.03,
+    "min_profit_vs_champion": true
+  }
+}

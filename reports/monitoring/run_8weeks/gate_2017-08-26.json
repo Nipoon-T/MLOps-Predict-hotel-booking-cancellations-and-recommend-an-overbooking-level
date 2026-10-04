@@ -1,0 +1,31 @@
+{
+  "cutoff": "2017-08-26",
+  "passed": false,
+  "reasons": [
+    "profit 2360867.9058 ต่ำกว่า champion 2365158.3988"
+  ],
+  "candidate": {
+    "pr_auc": 0.7474,
+    "roc_auc": 0.8183,
+    "log_loss": 0.4886,
+    "brier": 0.1656,
+    "ece": 0.0358
+  },
+  "champion": {
+    "pr_auc": 0.7358,
+    "roc_auc": 0.8137,
+    "log_loss": 0.4992,
+    "brier": 0.1693,
+    "ece": 0.0538
+  },
+  "profit": {
+    "candidate": 2360867.9058,
+    "champion": 2365158.3988,
+    "delta": -4290.493
+  },
+  "rules": {
+    "max_ece": 0.05,
+    "max_pr_auc_drop": 0.03,
+    "min_profit_vs_champion": true
+  }
+}
