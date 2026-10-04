@@ -782,21 +782,25 @@ python -m pipeline.run --skip-train
 
 ### เวลาที่ใช้ (laptop ของทีม, Windows)
 
-| ขั้น | เวลาโดยประมาณ |
+รันเต็ม `python -m pipeline.run` จบใน **3 นาที 44 วินาที** (มี Docker image cache แล้ว)
+
+| subflow | เวลา | ขั้นที่ใช้เวลามาก |
+| --- | --- | --- |
+| data-pipeline | 56 s | pytest 80 เทส 32 s, clean 6 s, split 6 s |
+| model-pipeline | 2 นาที 7 s | train 5 การทดลอง 80 s, calibrate + register 47 s |
+| deploy-model | 38 s | docker compose 17 s, รอ API พร้อม 15 s, export 5 s |
+
+| ขั้นในวงจร retrain | เวลา |
 | --- | --- |
-| clean_data | 3–5 s |
-| split_data | 3–5 s |
-| pytest (76 เทส) | ~23 s |
-| train (5 การทดลอง) | ~30 s |
-| export_model | 4–6 s |
-| docker compose up (มี cache) | 6–15 s |
-| API พร้อม (8 workers โหลดโมเดล) | ~15 s |
-| retrain: สร้างหน้าต่างข้อมูล | ~3 s |
-| retrain: เทรน + calibrate + register | ~30 s |
-| gate (วัด candidate + champion) | ~11 s |
+| ตรวจ drift ต่อสัปดาห์ (Evidently + NannyML) | 15–40 s |
+| สร้างหน้าต่างข้อมูล | ~4 s |
+| retrain + calibrate + register | 35–90 s |
+| gate (วัด candidate + champion) | 14–17 s |
 | promote + export + restart API | ~50 s |
 
-build image ครั้งแรกใช้ ~4 นาที (ติดตั้ง requirements) ครั้งต่อไปใช้ cache
+build image ใหม่ (ครั้งแรก หรือเมื่อ `requirements.txt` เปลี่ยน) ใช้เพิ่ม 4–5 นาที
+
+
 
 ### ข้อควรรู้
 
@@ -888,24 +892,4 @@ python -m pipeline.run --simulate --weeks 8 --retrain-on-drift --drift-cmd ".ven
 `available=false` และไม่ trigger จากส่วนนี้ แต่ Data Drift/NannyML และ Prior Shift
 ยังทำงานตามปกติ
 
-
-### เวลาที่ใช้ (laptop ของทีม, Windows)
-
-รันเต็ม `python -m pipeline.run` จบใน **3 นาที 44 วินาที** (มี Docker image cache แล้ว)
-
-| subflow | เวลา | ขั้นที่ใช้เวลามาก |
-| --- | --- | --- |
-| data-pipeline | 56 s | pytest 80 เทส 32 s, clean 6 s, split 6 s |
-| model-pipeline | 2 นาที 7 s | train 5 การทดลอง 80 s, calibrate + register 47 s |
-| deploy-model | 38 s | docker compose 17 s, รอ API พร้อม 15 s, export 5 s |
-
-| ขั้นในวงจร retrain | เวลา |
-| --- | --- |
-| ตรวจ drift ต่อสัปดาห์ (Evidently + NannyML) | 15–40 s |
-| สร้างหน้าต่างข้อมูล | ~4 s |
-| retrain + calibrate + register | 35–90 s |
-| gate (วัด candidate + champion) | 14–17 s |
-| promote + export + restart API | ~50 s |
-
-build image ใหม่ (ครั้งแรก หรือเมื่อ `requirements.txt` เปลี่ยน) ใช้เพิ่ม 4–5 นาที
 
