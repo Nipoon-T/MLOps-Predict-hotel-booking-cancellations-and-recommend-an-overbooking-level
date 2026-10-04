@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from policies import (
     policy_avg_rate,
     policy_fixed,

@@ -55,7 +55,7 @@ def find_optimal_overbook(
     cum_shows = np.cumsum(shows, axis=1)
 
     cost_curve = {}
-    for o in range(0, o_max + 1):
+    for o in range(o_max + 1):
         accepted_n = min(n_bookings, capacity + o)
         if accepted_n == 0:
             arrivals = np.zeros(shows.shape[0])

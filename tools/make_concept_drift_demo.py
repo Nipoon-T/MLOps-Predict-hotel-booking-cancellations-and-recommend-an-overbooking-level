@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 INPUT = Path("data/production_weeks/week_01.csv")
 OUTPUT = Path(
     "data/production_weeks/week_01_concept_drift.csv"

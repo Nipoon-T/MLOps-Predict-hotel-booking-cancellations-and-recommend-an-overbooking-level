@@ -14,9 +14,8 @@ from evidently.presets import DataDriftPreset
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.modeling.features import build_features, get_target  # noqa: E402
-from src.modeling.train import compute_metrics  # noqa: E402
-
+from src.modeling.features import build_features, get_target
+from src.modeling.train import compute_metrics
 
 REFERENCE_PATH = PROJECT_ROOT / "data" / "processed" / "train.csv"
 CONCEPT_BASELINE_PATH = PROJECT_ROOT / "data" / "processed" / "test.csv"
