@@ -10,14 +10,20 @@
     "ece": 0.038
   },
   "champion": {
-    "pr_auc": 0.7833,
-    "roc_auc": 0.8486,
-    "log_loss": 0.4536,
-    "brier": 0.1513,
-    "ece": 0.0257
+    "pr_auc": 0.7952,
+    "roc_auc": 0.8571,
+    "log_loss": 0.4424,
+    "brier": 0.1478,
+    "ece": 0.0346
+  },
+  "profit": {
+    "candidate": 1504174.656,
+    "champion": 1502836.4089,
+    "delta": 1338.2471
   },
   "rules": {
     "max_ece": 0.05,
-    "max_pr_auc_drop": 0.03
+    "max_pr_auc_drop": 0.03,
+    "min_profit_vs_champion": true
   }
 }
