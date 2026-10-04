@@ -3,7 +3,7 @@
   "retrain": true,
   "reasons": [
     "NannyML detected 8 drift alert(s)",
-    "Concept/performance drift: ECE 0.0551 >0.05"
+    "Concept/performance drift: ECE 0.0810 >0.05"
   ],
   "evidence": {
     "evidently_report": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\reports\\monitoring\\drift\\evidently_week_08.html",
@@ -38,23 +38,23 @@
       "baseline": {
         "dataset": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\data\\processed\\test.csv",
         "rows": 12789,
-        "pr_auc": 0.7701501664065805,
-        "ece": 0.04818439547233646
+        "pr_auc": 0.7720378821151969,
+        "ece": 0.04932235970355489
       },
       "current": {
         "rows": 1513,
-        "pr_auc": 0.7858920389475876,
-        "ece": 0.05512268354744422
+        "pr_auc": 0.7984346531999919,
+        "ece": 0.08097286978599647
       },
       "thresholds": {
         "max_pr_auc_drop": 0.03,
         "max_ece": 0.05
       },
-      "pr_auc_drop": -0.015741872541007118,
+      "pr_auc_drop": -0.02639677108479499,
       "pr_auc_triggered": false,
       "ece_triggered": true,
       "reasons": [
-        "Concept/performance drift: ECE 0.0551 >0.05"
+        "Concept/performance drift: ECE 0.0810 >0.05"
       ]
     }
   }

@@ -38,19 +38,19 @@
       "baseline": {
         "dataset": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\data\\processed\\test.csv",
         "rows": 12789,
-        "pr_auc": 0.7720408233254774,
-        "ece": 0.05063009548443699
+        "pr_auc": 0.7720379919634694,
+        "ece": 0.04932235970355485
       },
       "current": {
         "rows": 1193,
-        "pr_auc": 0.8688227655791345,
-        "ece": 0.0495382564445968
+        "pr_auc": 0.8680304809884495,
+        "ece": 0.04690054504008948
       },
       "thresholds": {
         "max_pr_auc_drop": 0.03,
         "max_ece": 0.05
       },
-      "pr_auc_drop": -0.0967819422536571,
+      "pr_auc_drop": -0.09599248902498003,
       "pr_auc_triggered": false,
       "ece_triggered": false,
       "reasons": []

@@ -77,7 +77,7 @@ def log_environment():
         freeze = subprocess.check_output(
             [sys.executable, "-m", "pip", "freeze"]
         ).decode()
-    except Exception:
+    except Exception:  # noqa: BLE001
         freeze = "pip freeze failed"
 
     env_info = (

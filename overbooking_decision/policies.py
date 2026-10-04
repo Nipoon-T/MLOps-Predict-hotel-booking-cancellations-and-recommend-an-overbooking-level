@@ -17,7 +17,7 @@ def policy_no_overbook(capacity: int) -> int:
 
 
 def policy_fixed(capacity: int, fixed_pct: float = 0.05) -> int:
-    return int(round(capacity * fixed_pct))
+    return round(capacity * fixed_pct)
 
 
 def policy_avg_rate(capacity: int, avg_cancel_rate: float) -> int:
@@ -26,7 +26,7 @@ def policy_avg_rate(capacity: int, avg_cancel_rate: float) -> int:
     แล้วอนุญาตให้รับจองเกินเท่ากับจำนวนนั้น (แบบ deterministic ไม่ใช้ Monte Carlo)
     """
     avg_cancel_rate = max(0.0, min(1.0, avg_cancel_rate))
-    return int(round(capacity * avg_cancel_rate))
+    return round(capacity * avg_cancel_rate)
 
 
 def policy_model(

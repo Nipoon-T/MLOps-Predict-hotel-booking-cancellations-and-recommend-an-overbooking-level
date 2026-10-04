@@ -14,7 +14,6 @@ label มาช้า: รู้ว่ายกเลิกจริงหรื
 
 import json
 import shlex
-import sys
 from pathlib import Path
 
 import pandas as pd
@@ -31,7 +30,10 @@ from pipeline.flow import (
 PRODUCTION_FILE = PROJECT_ROOT / "data" / "processed" / "production.csv"
 WEEKS_DIR = PROJECT_ROOT / "data" / "production_weeks"
 MONITOR_DIR = PROJECT_ROOT / "reports" / "monitoring"
-DEFAULT_DRIFT_CMD = f'"{sys.executable}" pipeline/mock_drift.py {{week_csv}} {{out_json}}'
+DEFAULT_DRIFT_CMD = (
+    r".venv-monitor\Scripts\python.exe "
+    r"src/monitoring/check_drift.py {week_csv} {out_json}"
+)
 
 
 @task(name="split-production-weeks")

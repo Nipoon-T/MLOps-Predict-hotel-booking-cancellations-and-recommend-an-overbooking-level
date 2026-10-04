@@ -1,13 +1,15 @@
 {
-  "week": 6,
+  "week": 20,
   "retrain": true,
   "reasons": [
-    "NannyML detected 3 drift alert(s)",
-    "Concept/performance drift: ECE 0.0593 >0.05"
+    "NannyML detected 12 drift alert(s)",
+    "Cancellation-rate gap exceeded 5%",
+    "Concept/performance drift: PR-AUC dropped by 0.1556 (>0.03)",
+    "Concept/performance drift: ECE 0.0571 >0.05"
   ],
   "evidence": {
-    "evidently_report": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\reports\\monitoring\\drift\\evidently_week_06.html",
-    "nannyml_alerts": 3,
+    "evidently_report": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\reports\\monitoring\\drift\\evidently_week_20.html",
+    "nannyml_alerts": 12,
     "nannyml_features_checked": [
       "lead_time",
       "stays_in_weekend_nights",
@@ -23,10 +25,10 @@
     ],
     "prior_shift": {
       "reference_cancellation_rate": 0.3580068420623931,
-      "current_cancellation_rate": 0.40336134453781514,
-      "absolute_gap": 0.045354502475422054,
+      "current_cancellation_rate": 0.4114285714285714,
+      "absolute_gap": 0.05342172936617834,
       "threshold": 0.05,
-      "triggered": false
+      "triggered": true
     },
     "concept_drift": {
       "available": true,
@@ -38,23 +40,24 @@
       "baseline": {
         "dataset": "C:\\Users\\user\\Documents\\GitHub\\MLOps-Predict-hotel-booking-cancellations-and-recommend-an-overbooking-level\\data\\processed\\test.csv",
         "rows": 12789,
-        "pr_auc": 0.7720378821151969,
-        "ece": 0.049322359703554926
+        "pr_auc": 0.7852090400718854,
+        "ece": 0.03711569389414836
       },
       "current": {
-        "rows": 1309,
-        "pr_auc": 0.8322540571369986,
-        "ece": 0.059300215830368166
+        "rows": 1225,
+        "pr_auc": 0.6296110513542252,
+        "ece": 0.05710767675828569
       },
       "thresholds": {
         "max_pr_auc_drop": 0.03,
         "max_ece": 0.05
       },
-      "pr_auc_drop": -0.060216175021801766,
-      "pr_auc_triggered": false,
+      "pr_auc_drop": 0.15559798871766017,
+      "pr_auc_triggered": true,
       "ece_triggered": true,
       "reasons": [
-        "Concept/performance drift: ECE 0.0593 >0.05"
+        "Concept/performance drift: PR-AUC dropped by 0.1556 (>0.03)",
+        "Concept/performance drift: ECE 0.0571 >0.05"
       ]
     }
   }
