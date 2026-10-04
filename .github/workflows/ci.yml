@@ -29,8 +29,12 @@ jobs:
 
       - name: Ruff check
         run: |
-          ruff check .
+          ruff check pipeline src/monitoring tests
+
+      - name: Prepare test data
+        run: |
+          python tests/prepare_test_data.py
 
       - name: Run tests
         run: |
-          pytest -q
+          pytest -q tests overbooking_decision/tests
