@@ -714,6 +714,17 @@ python -m pipeline.run --demo-bad-data
 * `--rollback` สลับ `champion` กับ `previous_champion` (รันซ้ำอีกครั้งจะย้อนกลับได้)
 * ทั้งสองคำสั่ง export โมเดลใหม่และรีสตาร์ท API ให้ทันที ตรวจได้จาก `serving_model/EXPORTED_FROM.txt`
 
+### หลักฐานการรันจริง
+
+| สิ่งที่แสดง | ไฟล์ |
+| --- | --- |
+| รันเต็ม 3 subflow ใน Prefect UI (3m 44s) | `docs/evidence/pipeline/prefect_full_pipeline.png` |
+| ข้อมูลเสียถูกหยุดที่ validation gate | `docs/evidence/pipeline/prefect_demo_bad_data.png` |
+| MLflow registry ก่อน rollback (champion v6) | `docs/evidence/registry/registry_before_rollback.png` |
+| MLflow registry หลัง rollback (champion v5) | `docs/evidence/registry/registry_after_rollback.png` |
+| ผล gate ของ retrain ทั้ง 2 รอบ | `reports/monitoring/gate_2017-04-08.json`, `gate_2017-05-06.json` |
+| ผลตรวจ drift รายสัปดาห์ | `reports/monitoring/simulation_summary.csv`, `reports/monitoring/drift/` |
+
 ### จำลอง production รายสัปดาห์และ retrain
 
 ต้องรัน `python -m pipeline.run` อย่างน้อยหนึ่งครั้งก่อน เพื่อให้มี `data/processed/production.csv`,
@@ -898,13 +909,3 @@ python -m pipeline.run --simulate --weeks 8 --retrain-on-drift --drift-cmd ".ven
 
 build image ใหม่ (ครั้งแรก หรือเมื่อ `requirements.txt` เปลี่ยน) ใช้เพิ่ม 4–5 นาที
 
-### หลักฐานการรันจริง
-
-| สิ่งที่แสดง | ไฟล์ |
-| --- | --- |
-| รันเต็ม 3 subflow ใน Prefect UI (3m 44s) | `docs/evidence/pipeline/prefect_full_pipeline.png` |
-| ข้อมูลเสียถูกหยุดที่ validation gate | `docs/evidence/pipeline/prefect_demo_bad_data.png` |
-| MLflow registry ก่อน rollback (champion v6) | `docs/evidence/registry/registry_before_rollback.png` |
-| MLflow registry หลัง rollback (champion v5) | `docs/evidence/registry/registry_after_rollback.png` |
-| ผล gate ของ retrain ทั้ง 2 รอบ | `reports/monitoring/gate_2017-04-08.json`, `gate_2017-05-06.json` |
-| ผลตรวจ drift รายสัปดาห์ | `reports/monitoring/simulation_summary.csv`, `reports/monitoring/drift/` |
