@@ -20,6 +20,7 @@ from overbooking_decision.simulate import (
     simulate_show_matrix,
 )
 
+
 def test_simulate_show_matrix_shape():
     p = [0.1, 0.2, 0.3]
     shows = simulate_show_matrix(p, n_sims=500, seed=1)

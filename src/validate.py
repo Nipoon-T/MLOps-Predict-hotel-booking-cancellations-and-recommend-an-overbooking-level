@@ -948,7 +948,7 @@ def main():
             args.input
         )
 
-    except Exception as exc:
+    except Exception as exc: # noqa: BLE001
 
         print(
             f"❌ Failed to read CSV: {exc}"

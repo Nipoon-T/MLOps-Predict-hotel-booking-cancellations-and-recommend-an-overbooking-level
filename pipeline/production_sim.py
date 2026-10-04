@@ -14,7 +14,6 @@ label มาช้า: รู้ว่ายกเลิกจริงหรื
 
 import json
 import shlex
-import sys
 from pathlib import Path
 
 import pandas as pd

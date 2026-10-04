@@ -103,7 +103,7 @@ def load_calibrated_model(model_uri: str = "models:/hotel-cancellation-classifie
         import mlflow.sklearn
         model = mlflow.sklearn.load_model(model_uri)
         return model, "sklearn"
-    except Exception:
+    except Exception:  # noqa: BLE001
         model = mlflow.pyfunc.load_model(model_uri)
         return model, "pyfunc"
 
