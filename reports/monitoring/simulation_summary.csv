@@ -1,9 +1,9 @@
 ﻿week,rows,cancel_rate,retrain_signal,reasons,action
-1,1193,0.4174,False,,-
-2,1385,0.4202,False,,-
-3,1234,0.4311,False,,-
-4,1357,0.4643,False,,-
-5,1597,0.4671,False,,-
-6,1309,0.4034,True,MOCK: สัปดาห์ 6 อยู่ใน MOCK_DRIFT_WEEKS,retrain → gate ผ่าน → promote → redeploy
-7,1456,0.4732,False,,-
-8,1513,0.4038,False,,-
+1,1193,0.4174,True,NannyML detected 4 drift alert(s); Cancellation-rate gap exceeded 5%,retrain → gate ไม่ผ่าน → ใช้ champion เดิม
+2,1385,0.4202,True,NannyML detected 6 drift alert(s); Cancellation-rate gap exceeded 5%; Concept/performance drift: PR-AUC dropped by 0.0477 (>0.03),ข้าม (cooldown ถึงสัปดาห์ 5)
+3,1234,0.4311,True,NannyML detected 3 drift alert(s); Cancellation-rate gap exceeded 5%,ข้าม (cooldown ถึงสัปดาห์ 5)
+4,1357,0.4643,True,NannyML detected 5 drift alert(s); Cancellation-rate gap exceeded 5%; Concept/performance drift: ECE 0.0536 >0.05,ข้าม (cooldown ถึงสัปดาห์ 5)
+5,1597,0.4671,True,NannyML detected 5 drift alert(s); Cancellation-rate gap exceeded 5%; Concept/performance drift: ECE 0.0502 >0.05,retrain → gate ผ่าน → promote → redeploy
+6,1309,0.4034,True,NannyML detected 3 drift alert(s); Concept/performance drift: ECE 0.0509 >0.05,ข้าม (cooldown ถึงสัปดาห์ 9)
+7,1456,0.4732,True,NannyML detected 5 drift alert(s); Cancellation-rate gap exceeded 5%,ข้าม (cooldown ถึงสัปดาห์ 9)
+8,1513,0.4038,True,NannyML detected 8 drift alert(s); Concept/performance drift: ECE 0.0551 >0.05,ข้าม (cooldown ถึงสัปดาห์ 9)

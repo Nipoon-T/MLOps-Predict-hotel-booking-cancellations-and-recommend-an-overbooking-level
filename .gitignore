@@ -143,3 +143,6 @@ serving_model/
 data/production_weeks/
 data/retrain/
 .venv312/
+# Python virtual environments
+.venv/
+.venv-monitor/

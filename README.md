@@ -542,7 +542,7 @@ uvicorn src.serving.app:app --reload --port 8000
 python -m pytest tests/test_api.py -v
 ```
 
-มี 18 เทส ถ้าไม่มีโมเดลหรือ `test.csv` (เช่นใน CI) เทสที่ต้องใช้โมเดล 4 ข้อจะถูกข้าม (skip) ส่วนเทสข้อมูลผิดยังรันได้ครบ
+มี 18 เทส ถ้าไม่มีโมเดลหรือ `test.csv` (เช่นใน CI) เทสที่ต้องใช้โมเดล 3 ข้อจะถูกข้าม (skip) เหลือผ่าน 15 ข้อ ส่วนเทสข้อมูลผิดยังรันได้ครบ
 
 ### รันใน Docker
 
@@ -794,3 +794,85 @@ build image ครั้งแรกใช้ ~4 นาที (ติดตั�
 * ดู log ของ API: `docker compose logs api` ปิด API: `docker compose down`
 * validate ข้อมูลดิบ **คาดว่าจะไม่ผ่าน** (adr ติดลบ 1 แถว, ผู้เข้าพักเป็นศูนย์ 180 แถว) flow จึงบันทึกผลเป็น warning แล้วไปต่อ gate จริงคือ validate หลัง clean
 * ข้อมูลที่ flow สร้าง (`data/production_weeks/`, `data/retrain/`) ถูก `.gitignore` กันไว้
+
+
+#### ใช้ตัวตรวจ drift จริง (Evidently + NannyML)
+
+NannyML 0.13.1 รองรับแค่ Python ต่ำกว่า 3.13 จึงแยก environment สำหรับ monitoring เป็น Python 3.12
+ไม่กระทบไลบรารีของโมเดลและ API ที่ใช้ Python 3.13
+
+```powershell
+py -3.12 -m venv .venv-monitor
+.venv-monitor\Scripts\pip install -r requirements-monitoring.txt
+```
+
+แล้วส่งตัวตรวจจริงให้วงจร retrain ผ่าน `--drift-cmd` (รันจาก root ของ repo, activate `.venv` ปกติ):
+
+```powershell
+python -m pipeline.run --simulate --weeks 8 --retrain-on-drift --drift-cmd ".venv-monitor\Scripts\python.exe src/monitoring/check_drift.py {week_csv} {out_json}"
+```
+
+ผลจริง (8 สัปดาห์): ตัวตรวจส่งสัญญาณทุกสัปดาห์ cooldown 4 สัปดาห์จำกัดให้ retrain ที่สัปดาห์ 1 และ 5
+
+| รอบ | หน้าต่างข้อมูลถึง | PR-AUC champion → candidate | ECE champion → candidate | ผล |
+| --- | --- | --- | --- | --- |
+| สัปดาห์ 1 | 2017-04-08 | 0.7722 (v1) → 0.7792 (v5) | 0.0386 → 0.0464 | ผ่าน → promote |
+| สัปดาห์ 5 | 2017-05-06 | 0.7824 (v5) → 0.7943 (v6) | 0.0370 → 0.0358 | ผ่าน → promote |
+
+ผลแต่ละสัปดาห์อยู่ที่ `reports/monitoring/week_XX.json`, gate ที่ `reports/monitoring/gate_<cutoff>.json`
+และรายงาน Evidently ที่ `reports/monitoring/drift/`
+
+### Concept Drift / Label-based Performance Monitoring (Role 6)
+
+นอกจาก Data Drift และ Prior Shift แล้ว ตัวตรวจจริงใน
+`src/monitoring/check_drift.py` จะประเมิน performance ของ `champion`
+เมื่อ label ของ production week มาถึงแล้ว
+
+หลักการ:
+
+```text
+champion
+   ↓
+ทำนาย production week ที่มี is_canceled แล้ว
+   ↓
+คำนวณ PR-AUC + ECE
+   ↓
+เทียบกับ champion บน data/processed/test.csv
+   ↓
+PR-AUC ลด > 0.03 หรือ ECE > 0.05
+   ↓
+Concept / performance drift alert
+   ↓
+retrain = true
+```
+
+> หมายเหตุ: การตรวจนี้เป็น **label-based performance-drift monitor / operational proxy
+> สำหรับ concept drift** เพราะจะตรวจได้เมื่อผล `is_canceled` ของสัปดาห์นั้นมาถึงแล้ว
+> ไม่ควรอธิบายว่าเป็นการพิสูจน์การเปลี่ยนแปลงของ \(P(y|x)\) โดยตรง
+
+ตัวตรวจจะบันทึกผลไว้ใน `reports/monitoring/week_XX.json` ภายใต้
+`evidence.concept_drift` เช่น baseline/current PR-AUC, ECE,
+PR-AUC drop และเหตุผลที่ trigger
+
+#### ติดตั้ง monitoring environment
+
+```powershell
+py -3.12 -m venv .venv-monitor
+.venv-monitor\Scripts\pip install -r requirements-monitoring.txt
+```
+
+จากนั้นรันวงจรเต็มด้วยตัวตรวจจริง:
+
+```powershell
+python -m pipeline.run --simulate --weeks 8 --retrain-on-drift --drift-cmd ".venv-monitor\Scripts\python.exe src/monitoring/check_drift.py {week_csv} {out_json}"
+```
+
+ทดสอบตัวตรวจโดยตรงได้ด้วย:
+
+```powershell
+.venv-monitor\Scripts\python.exe src/monitoring/check_drift.py data/production_weeks/week_01.csv reports/monitoring/week_01.json
+```
+
+ถ้า `champion` ยังไม่มีใน MLflow Registry ส่วน Concept Drift จะถูกระบุเป็น
+`available=false` และไม่ trigger จากส่วนนี้ แต่ Data Drift/NannyML และ Prior Shift
+ยังทำงานตามปกติ
