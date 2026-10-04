@@ -1,20 +1,24 @@
 """
 pytest -q  (รันจาก overbooking_decision/)
 """
-import sys
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
-import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from backtest import aggregate_results, backtest_night, backtest_policies
-from cost_config import load_config
-from policies import policy_avg_rate, policy_fixed, policy_no_overbook
-from simulate import find_optimal_overbook, simulate_show_matrix
-
+from overbooking_decision.backtest import (
+    aggregate_results,
+    backtest_night,
+    backtest_policies,
+)
+from overbooking_decision.cost_config import load_config
+from overbooking_decision.policies import (
+    policy_avg_rate,
+    policy_fixed,
+    policy_no_overbook,
+)
+from overbooking_decision.simulate import (
+    find_optimal_overbook,
+    simulate_show_matrix,
+)
 
 def test_simulate_show_matrix_shape():
     p = [0.1, 0.2, 0.3]
@@ -80,7 +84,6 @@ def test_backtest_night_no_overbook_never_moves_customers_beyond_accepted():
     result = backtest_night(night_df, capacity=200, cost_empty=100.0, cost_overbook=250.0, o=0)
     assert result["moved_customers"] == 0
 
-
 def test_backtest_policies_and_aggregate_run_end_to_end():
     rng = np.random.default_rng(1)
     rows = []
@@ -102,7 +105,3 @@ def test_backtest_policies_and_aggregate_run_end_to_end():
     summary = aggregate_results(bt)
     assert "moved_per_1000_nights" in summary.columns
     assert len(summary) == 3
-
-
-if __name__ == "__main__":
-    sys.exit(pytest.main([__file__, "-q"]))

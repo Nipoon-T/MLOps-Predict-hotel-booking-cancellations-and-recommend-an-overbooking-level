@@ -11,7 +11,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from real_data_adapter import (
+from overbooking_decision.real_data_adapter import (
     add_stay_date,
     compute_length_of_stay,
     compute_nightly_occupancy,

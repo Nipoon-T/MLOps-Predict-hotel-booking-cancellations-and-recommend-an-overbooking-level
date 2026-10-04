@@ -14,7 +14,8 @@
 from __future__ import annotations
 
 import pandas as pd
-from policies import (
+
+from .policies import (
     policy_avg_rate,
     policy_fixed,
     policy_model,
@@ -124,7 +125,7 @@ def aggregate_results(backtest_df: pd.DataFrame) -> pd.DataFrame:
     """
     สรุปกำไรรวมและจำนวนลูกค้าที่ถูกย้าย "ต่อ 1,000 คืน" ตาม business metric ในสโคป
     """
-    n_nights = backtest_df.groupby("policy")["stay_date"].transform("count")
+
     summary = (
         backtest_df.groupby("policy")
         .agg(total_profit=("profit", "sum"), total_moved=("moved_customers", "sum"), n_nights=("stay_date", "count"))

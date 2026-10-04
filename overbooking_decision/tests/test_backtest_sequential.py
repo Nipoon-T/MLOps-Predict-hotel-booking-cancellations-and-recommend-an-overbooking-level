@@ -2,15 +2,12 @@
 ทดสอบ backtest_sequential.py โดยเน้น carryover logic (จุดที่แก้จาก backtest.py เดิม)
 """
 import sys
-from pathlib import Path
 
 import pandas as pd
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from backtest_sequential import backtest_policies_sequential
-from cost_config import load_config
+from overbooking_decision.backtest_sequential import backtest_policies_sequential
+from overbooking_decision.cost_config import load_config
 
 
 def make_two_night_df():
@@ -86,7 +83,7 @@ def test_canceled_carryover_booking_does_not_block_capacity():
 
 
 def test_output_schema_compatible_with_aggregate_results():
-    from backtest import aggregate_results
+    from overbooking_decision.backtest import aggregate_results
 
     df = make_two_night_df()
     cfg = load_config()
